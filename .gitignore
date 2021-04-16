@@ -1,4 +1,4 @@
-.pio
-.vscode
-test
-lib
+.pio/
+.vscode/
+test/
+lib/
