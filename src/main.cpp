@@ -57,10 +57,22 @@ void setup() {
 // The repeating section of the code
 void loop() {
   // Check if the IR code has been received.
+ 
+  
   
 
 
   if (irrecv.decode(&results)) {
+  
+   stdAc::state_t comando ;
+
+  preferences.begin("my-app", false);
+  Serial.print("byte presi");
+  Serial.println(preferences.getBytes("comando", &comando, MAX_SIZE)); 
+  preferences.end();
+
+  Serial.print("i gradi sono: ");
+  Serial.println(comando.degrees);
 
     Serial.print(resultToHumanReadableBasic(&results));
     stdAc::state_t prev, readablestate;
@@ -78,7 +90,7 @@ void loop() {
     ac.next.model = readablestate.model;  // Some A/Cs have different models. Try just the first.
     ac.next.mode = readablestate.mode;  // Run in cool mode initially.
     ac.next.celsius = readablestate.celsius;  // Use Celsius for temp units. False = Fahrenheit
-    ac.next.degrees = 25;  // 25 degrees.
+    ac.next.degrees = readablestate.degrees;  // 25 degrees.
     ac.next.fanspeed = readablestate.fanspeed;  // Start the fan at medium.
     ac.next.swingv = readablestate.swingv;  // Don't swing the fan up or down.
     ac.next.swingh = readablestate.swingh;  // Don't swing the fan left or right.
@@ -96,7 +108,7 @@ void loop() {
     Serial.print("Dimensione ac: ");
     Serial.println(sizeof(ac.next));
 
-stdAc::state_t comando ; 
+ 
 
     preferences.begin("my-app", false);
     preferences.putBytes("comando", &ac.next, sizeof(ac.next));  
@@ -104,10 +116,9 @@ stdAc::state_t comando ;
     preferences.end();
 
      
-  preferences.begin("my-app", false);
-  Serial.print("byte presi");
-  Serial.println(preferences.getBytes("comando", &comando, MAX_SIZE)); 
-  preferences.end();
+ 
+
+  
 
 
     /* sleep(10);
