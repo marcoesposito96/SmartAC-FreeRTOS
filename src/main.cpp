@@ -5,12 +5,18 @@
 #include <IRtext.h>
 #include <IRutils.h>
 #include <IRsend.h>
+#include <Preferences.h>
 
-const uint16_t kRecvPin = 15;
+const size_t MAX_SIZE = 48;
+
+Preferences preferences ;
+
+const uint16_t kRecvPin = 13;
 const uint32_t kBaudRate = 115200;
 const uint16_t kCaptureBufferSize = 1024;
 
-IRac ac(15);  // Create a A/C object using GPIO to sending messages with.
+
+IRac ac(14);  // Create a A/C object using GPIO to sending messages with.
 
 #if DECODE_AC
 const uint8_t kTimeout = 50;
@@ -51,8 +57,12 @@ void setup() {
 // The repeating section of the code
 void loop() {
   // Check if the IR code has been received.
+  
+
+
   if (irrecv.decode(&results)) {
 
+    Serial.print(resultToHumanReadableBasic(&results));
     stdAc::state_t prev, readablestate;
 
     IRAcUtils::decodeToState(&results, &readablestate);
@@ -81,12 +91,32 @@ void loop() {
     ac.next.sleep = readablestate.sleep;  // Don't set any sleep time or modes.
     ac.next.clean = readablestate.clean;  // Turn off any Cleaning options if we can.
     ac.next.clock = readablestate.clock;  // Don't set any current time if we can avoid it.
-    ac.next.power = readablestate.power;  // Initially start with the unit off.
-
-    ac.sendAc(); 
-
-
+    ac.next.power = true;  // Initially start with the unit off.
     
+    Serial.print("Dimensione ac: ");
+    Serial.println(sizeof(ac.next));
+
+stdAc::state_t comando ; 
+
+    preferences.begin("my-app", false);
+    preferences.putBytes("comando", &ac.next, sizeof(ac.next));  
+        
+    preferences.end();
+
+     
+  preferences.begin("my-app", false);
+  Serial.print("byte presi");
+  Serial.println(preferences.getBytes("comando", &comando, MAX_SIZE)); 
+  preferences.end();
+
+
+    /* sleep(10);
+
+    while(true){
+    
+    sleep(3);
+    ac.sendAc(); 
+    } */
     
     Serial.print(resultToHumanReadableBasic(&results));
     //Serial.print("IL PROTOCOLO: " + typeToString(results.decode_type, results.repeat));  
