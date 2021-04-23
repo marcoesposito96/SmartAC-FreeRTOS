@@ -39,43 +39,44 @@ decode_results results;  // Somewhere to store the results
 
 // This section of code runs only once at start-up.
 void setup() {
-#if defined(ESP8266)
-  Serial.begin(kBaudRate, SERIAL_8N1, SERIAL_TX_ONLY);
-#else  // ESP8266
-  Serial.begin(kBaudRate, SERIAL_8N1);
-#endif  // ESP8266
-  while (!Serial)  // Wait for the serial connection to be establised.
-    delay(50);
-  Serial.printf("\n" D_STR_IRRECVDUMP_STARTUP "\n", kRecvPin);
-#if DECODE_HASH
-  // Ignore messages with less than minimum on or off pulses.
-  irrecv.setUnknownThreshold(kMinUnknownSize);
-#endif  // DECODE_HASH
-  irrecv.enableIRIn();  // Start the receiver
+  #if defined(ESP8266)
+    Serial.begin(kBaudRate, SERIAL_8N1, SERIAL_TX_ONLY);
+  #else  // ESP8266
+    Serial.begin(kBaudRate, SERIAL_8N1);
+  #endif  // ESP8266
+    while (!Serial)  // Wait for the serial connection to be establised.
+      delay(50);
+    Serial.printf("\n" D_STR_IRRECVDUMP_STARTUP "\n", kRecvPin);
+  #if DECODE_HASH
+    // Ignore messages with less than minimum on or off pulses.
+    irrecv.setUnknownThreshold(kMinUnknownSize);
+  #endif  // DECODE_HASH
+    irrecv.enableIRIn();  // Start the receiver
+  preferences.begin("my-app", false);
+  preferences.clear();
+  preferences.end();
 }
 
-// The repeating section of the code
-void loop() {
-  // Check if the IR code has been received.
- 
-  
-  
 
+void loop() {
 
   if (irrecv.decode(&results)) {
   
-   stdAc::state_t comando ;
+    stdAc::state_t comando ;
+    preferences.begin("my-app", false);
+    preferences.clear();
+    Serial.print("byte presi ");
+    size_t a;
+    a=preferences.getBytes("comando", &comando, MAX_SIZE);
+    Serial.print("Risposta di getbytes: ");
+    Serial.println(a);
+    preferences.end();
 
-  preferences.begin("my-app", false);
-  Serial.print("byte presi");
-  Serial.println(preferences.getBytes("comando", &comando, MAX_SIZE)); 
-  preferences.end();
-
-  Serial.print("i gradi sono: ");
-  Serial.println(comando.degrees);
+    Serial.print("i gradi sono: ");
+    Serial.println(comando.degrees);
 
     Serial.print(resultToHumanReadableBasic(&results));
-    stdAc::state_t prev, readablestate;
+    stdAc::state_t readablestate;
 
     IRAcUtils::decodeToState(&results, &readablestate);
 
@@ -83,9 +84,6 @@ void loop() {
 
   
 
-    // Set up what we want to send.
-    // See state_t, opmode_t, fanspeed_t, swingv_t, & swingh_t in IRsend.h for
-    // all the various options.
     ac.next.protocol = readablestate.protocol;  // Set a protocol to use.
     ac.next.model = readablestate.model;  // Some A/Cs have different models. Try just the first.
     ac.next.mode = readablestate.mode;  // Run in cool mode initially.
@@ -110,7 +108,7 @@ void loop() {
 
  
 
-    preferences.begin("my-app", false);
+    preferences.begin("my-app", false); //apro il namespace my-app
     preferences.putBytes("comando", &ac.next, sizeof(ac.next));  
         
     preferences.end();
@@ -131,10 +129,10 @@ void loop() {
     
     Serial.print(resultToHumanReadableBasic(&results));
     //Serial.print("IL PROTOCOLO: " + typeToString(results.decode_type, results.repeat));  
-    
+    /*
     Serial.println(results.command);
     Serial.println("QUESTO E' RESULTS: ");
-    Serial.println(results.state[1]);
+    Serial.println(results.state[1]);*/
     // Display any extra A/C info if we have it.
     String description = IRAcUtils::resultAcToString(&results);
     //if (description.length()) Serial.println(D_STR_MESGDESC ": " + description);
