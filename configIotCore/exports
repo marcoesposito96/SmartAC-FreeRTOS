@@ -1,0 +1,8 @@
+export PROJECT_ID="smart-ac-embedded"
+export PUBSUB_TOPIC="iot-pub"
+export PUBSUB_SUBSCRIPTION="iot-tele"
+export REGISTRY_NAME="iot-reg"
+export DEVICE_NAME="esp32"
+export REGION_NAME="europe-west1"
+
+gcloud services enable pubsub.googleapis.com
