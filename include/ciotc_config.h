@@ -1,11 +1,24 @@
-const char *ssid = "dd-wrt";
-const char *password = "kindergransorpresa";
+// const char *ssid = "dd-wrt";
+// const char *password = "kindergransorpresa";
+
+const char *ssid = "FASTWEB-C16F97";
+const char *password = "alberogiallo12";
 
 // Cloud IoT details.
 const char *project_id = "smart-ac-embedded";
 const char *location = "europe-west1";
 const char *registry_id = "iot-reg";
+
+#define fabio
+
+#ifdef fabio
 const char *device_id = "esp32";
+#endif
+
+#ifdef marco
+const char *device_id = "esp32-2";
+#endif
+
 
 // Configuration for NTP
 const char* ntp_primary = "pool.ntp.org";
