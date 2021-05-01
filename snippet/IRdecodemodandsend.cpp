@@ -34,7 +34,7 @@ void setup() {
     delay(50);
   Serial.printf("\n In ascolto sul pin: \n", kRecvPin);
   irrecv.setUnknownThreshold(kMinUnknownSize); //imposta una soglia per evitare segnali di disturbo
-
+  irrecv.enableIRIn();  // Start the receiver
 }
 
 
