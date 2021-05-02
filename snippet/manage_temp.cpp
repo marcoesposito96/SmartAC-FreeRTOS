@@ -12,7 +12,7 @@ float hum_old = 0;
 uint64_t tempUpdateTime = 0;
 
 
-void readTempature()x
+void readTempature()
 { //check if temp has changed and send it to backend server
 
   float temp_new = (round(dht.readTemperature() * 2)) / 2;
