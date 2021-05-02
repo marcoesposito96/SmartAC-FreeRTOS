@@ -1,8 +1,8 @@
-// const char *ssid = "dd-wrt";
-// const char *password = "kindergransorpresa";
+const char *ssid = "dd-wrt";
+const char *password = "kindergransorpresa";
 
-const char *ssid = "FASTWEB-C16F97";
-const char *password = "alberogiallo12";
+// const char *ssid = "FASTWEB-C16F97";
+// const char *password = "alberogiallo12";
 
 // Cloud IoT details.
 const char *project_id = "smart-ac-embedded";

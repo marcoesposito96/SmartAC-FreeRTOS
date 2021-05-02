@@ -1,14 +1,34 @@
 #include <Arduino.h>
 #include "mqtt_func.h"
+#include <DHT.h>
+#define DHTPIN 25     
+#define DHTTYPE DHT22 
 
+DHT dht(DHTPIN, DHTTYPE);
 
 #define PUBLISH_DELAY 100000
 
 unsigned long lastMillis = 0;
 
+void get_temp(){
+  temp = (round(dht.readTemperature() * 2)) / 2;
+  hum = (round(dht.readHumidity() * 2)) / 2;
+  
+  while (isnan(hum) || isnan(temp))                           //avoid reading errors
+      {
+        temp = (round(dht.readTemperature() * 2)) / 2;
+        hum = (round(dht.readHumidity() * 2)) / 2;
+      }
+
+  Serial.println("temp: "+(String)temp);
+  Serial.println("hum: "+(String)hum);
+
+}
+
 void setup() {
   Serial.begin(115200); 
   setupCloudIoT();
+  dht.begin();
 }
 
 void loop() {
@@ -17,10 +37,7 @@ void loop() {
 
   if (!mqttClient->connected()) {
     connect();
-  }
-
-  temp= 25.5;                       //JUST FOR DEBUGGING
-  hum= 24;
+  }  
   
    if (auto_mode)                 //if auto mode is active updates state variable and run auto function
   {
@@ -34,7 +51,7 @@ void loop() {
   {
     // if (output_status = "off") output_status = "on";
     // else output_status = "off";
-    
+    get_temp();
     String payload = String("{\"temp\": ") + String(temp) + String(",\"hum\": ") + String(hum) + String(",\"auto\": \"") + state + String("\",\"thr\": \"") + thr + String("\",\"status\": \"")+ output_status + String("\"}");
     Serial.println(payload);
     publishTelemetry(payload);
