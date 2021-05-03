@@ -26,6 +26,27 @@ IRrecv irrecv(kRecvPin, kCaptureBufferSize, kTimeout, true);
 decode_results results;  // Variabile che conterrà le letture dei comandi
 
 
+void creasegnale(stdAc::state_t readablestate) {
+    ac.next.protocol = readablestate.protocol; 
+    ac.next.model = readablestate.model;
+    ac.next.celsius = readablestate.celsius;  
+    ac.next.fanspeed = readablestate.fanspeed;
+    ac.next.swingv = readablestate.swingv;
+    ac.next.swingh = readablestate.swingh; 
+    ac.next.light = true; 
+    ac.next.beep = readablestate.beep; 
+    ac.next.econo = readablestate.econo; 
+    ac.next.filter = readablestate.filter;
+    ac.next.turbo = readablestate.turbo;  
+    ac.next.quiet = readablestate.quiet; 
+    ac.next.sleep = readablestate.sleep;  
+    ac.next.clean = readablestate.clean;  
+    ac.next.clock = readablestate.clock;  
+    ac.next.power = true;  
+    ac.next.degrees = readablestate.degrees;
+    ac.next.mode = readablestate.mode; 
+}
+
 
 void setup() {
  
@@ -60,25 +81,7 @@ void loop() {
 
     IRAcUtils::decodeToState(&results, &readablestate);  
 
-    
-    ac.next.protocol = readablestate.protocol; 
-    ac.next.model = readablestate.model;
-    ac.next.mode = readablestate.mode;  
-    ac.next.celsius = readablestate.celsius;  
-    ac.next.degrees = readablestate.degrees;  
-    ac.next.fanspeed = readablestate.fanspeed;
-    ac.next.swingv = readablestate.swingv;
-    ac.next.swingh = readablestate.swingh; 
-    ac.next.light = true; 
-    ac.next.beep = readablestate.beep; 
-    ac.next.econo = readablestate.econo; 
-    ac.next.filter = readablestate.filter;
-    ac.next.turbo = readablestate.turbo;  
-    ac.next.quiet = readablestate.quiet; 
-    ac.next.sleep = readablestate.sleep;  
-    ac.next.clean = readablestate.clean;  
-    ac.next.clock = readablestate.clock;  
-    ac.next.power = true;  
+    creasegnale(readablestate);
     
 
     Serial.print("Dimensione ac: ");
