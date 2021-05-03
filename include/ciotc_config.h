@@ -1,21 +1,24 @@
 // const char *ssid = "dd-wrt";
 // const char *password = "kindergransorpresa";
 
-const char *ssid = "FASTWEB-C16F97";
-const char *password = "alberogiallo12";
+
 
 // Cloud IoT details.
 const char *project_id = "smart-ac-embedded";
 const char *location = "europe-west1";
 const char *registry_id = "iot-reg";
 
-#define fabio
+#define marco
 
 #ifdef fabio
+const char *ssid = "FASTWEB-C16F97";
+const char *password = "alberogiallo12";
 const char *device_id = "esp32";
 #endif
 
 #ifdef marco
+const char *ssid = "AndroidAP_6942"; //"Redmi_Note_9_Pro";
+const char *password = "deborahgua";
 const char *device_id = "esp32-2";
 #endif
 
