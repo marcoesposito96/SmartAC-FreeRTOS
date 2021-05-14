@@ -54,20 +54,38 @@ void loop() {
   else
     state = "Spenta";
 
-  if (active_mode="deumplus"){
+  if (active_mode=="deumplus"){
     deumPlusMode();
   }
 
   if (request_in)
   {
-    // if (output_status = "off") output_status = "on";
-    // else output_status = "off";
-    get_temp();
-    String payload = String("{\"temp\": ") + String(temp) + String(",\"hum\": ") + String(hum) + String(",\"tempdes\": ") + tempdes + String(",\"humdes\": ") + humdes + String("\",\"mode\": \"") + active_mode + String("\"}");
+    
+    get_temp();    
+    String payload = String("{\"temp\": ") + String(temp) + String(",\"hum\": ") + String(hum) + String(",\"tempdes\": ") + tempdes + String(",\"humdes\": ") + humdes + String(",\"mode\": \"") + active_mode + String("\"}");
+
     
     Serial.println(payload);
     publishTelemetry(payload);
     request_in = false;
+  }
+
+  if (request_rec)
+  {
+    Serial.println("ricevuto comando record");
+    //result = enable_receiver_mode();
+    //if (result)
+    {
+     //message = "ok"
+    }
+    //else
+    {
+      //message = "failed"     
+    }
+    String feedback = "ok";    
+    Serial.println(feedback);
+    publishTelemetry("/record", feedback);
+    request_rec = false;
   }
 
   // publish a message roughly every PUBLISH_DELAY ms.

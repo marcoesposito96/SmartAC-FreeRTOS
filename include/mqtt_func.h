@@ -7,6 +7,8 @@
 #include <CloudIoTCoreMqtt.h>
 #include "ciotc_config.h" 
 #include "variables.h"
+
+
 int c= 0;
 
 void messageReceived(String &topic, String &payload)              // manage incoming commands in subfolders

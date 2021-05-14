@@ -29,7 +29,7 @@ void setup() {
 void loop() {
   if (true) { //METTERE CONDIZIONE DI CICLO (PROB. QUANDO ARRIVA IL SEGNALE DAL BACKEND MANDA)
     preferences.begin("my-app", false);
-    size_t a=preferences.getBytes("command", &ac.next, MAX_SIZE);
+    preferences.getBytes("command", &ac.next, MAX_SIZE);
     preferences.end();
     edit(); //customizzo il segnale ac prima di inviarlo
     //MANCA GESTIONE UMIDITA
