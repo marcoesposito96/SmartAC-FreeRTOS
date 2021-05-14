@@ -2,39 +2,82 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <MQTT.h>
+#include <ArduinoJson.h>
 #include <CloudIoTCore.h>
 #include <CloudIoTCoreMqtt.h>
 #include "ciotc_config.h" 
 #include "variables.h"
-
+int c= 0;
 
 void messageReceived(String &topic, String &payload)              // manage incoming commands in subfolders
 {
   Serial.println("incoming: " + topic + " - " + payload);
+ 
+  if (topic == "/devices/"+(String)device_id+"/commands/pull")
+  {
+
+    request_in = true;
+  }
+  
+   if (topic == "/devices/"+(String)device_id+"/commands/mode")   //TODO add cool, deum and deum+ mode
+  {
+    
+    if (payload == "off"){      
+      active_mode="none";
+      //send_signal_ac_off();
+    }
+    else{
+      StaticJsonDocument<128> desired_conf;
+      DeserializationError error = deserializeJson(desired_conf, payload);
+
+      if (error) {
+        Serial.print(F("deserializeJson() failed: "));
+        Serial.println(error.f_str());
+        return;
+      }
+      
+      tempdes = desired_conf["tempdes"]; 
+      humdes = desired_conf["humdes"]; 
+
+      if (desired_conf["mode"] == "cool")                    
+        active_mode="cool";
+        //send_signal_ac_cool(tempdes);
+      if (desired_conf["mode"] == "deum")
+        active_mode="deum";
+        //send_signal_ac_deum(tempdes);
+      if (desired_conf["mode"] == "deumplus")
+        active_mode="deumplus";
+    }  
+  }
 
   if (topic == "/devices/"+(String)device_id+"/commands/power")
   {
-    auto_mode = false;
-    if (payload == "accendi")
-      output_status = "on" ; //digitalWrite(OUTPUT_PIN, HIGH);
-    if (payload == "spegni")
-      output_status = "off" ; //digitalWrite(OUTPUT_PIN, LOW);
-  }
-  if (topic == "/devices/"+(String)device_id+"/commands/pull")
-  {
-    request_in = true;
-  }
-  if (topic == "/devices/"+(String)device_id+"/commands/auto")
-  {
-    if (payload == "on")
-      auto_mode = true;
-    if (payload == "off")
-      auto_mode = false;
+    if (payload == "off"){
+      active_mode="none";
+      //send_signal_ac_off(); 
+    }
+    
   }
 
-  if (topic == "/devices/"+(String)device_id+"/commands/thr")
+  if (topic == "/devices/"+(String)device_id+"/commands/record")   //to enable ir receier mode
   {
-    thr = payload.toDouble();
+    
+    request_rec=true;
+    
+  }
+  
+}
+
+void deumPlusMode(){                            //task to repeat when deum+ is active (if active_mode=="deum+" in main loop)
+  if(hum < humdes && actual_state=="on")
+  {
+    //send_signal_off_ac()
+    actual_state="off";
+  }
+  if (actual_state=="off" && hum > (humdes + 10))  //10% tollerance
+  {
+    //send_signal_on_ac()
+    actual_state="on";
   }
 }
 

@@ -3,12 +3,14 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include "index.h"
+#include <Preferences.h>
 
 const char *ssid_ap = "Smart_ac";
 const char *password_ap = "123456789";
 String ssid = "";
 String password = "";
-boolean wifi_configured = false; 
+boolean wifi_configured = false;
+Preferences preferences ;
 
 WebServer server(80);
 
@@ -44,6 +46,27 @@ void handleConf()
     setup();
   }
 }
+
+void checkCredentials()
+{
+  
+  preferences.begin("credentials", false); 
+  ssid = preferences.getString("ssid", "wifi"); 
+  password = preferences.getString("password", "passwordwifi");
+
+  if (ssid == "" || password == "")
+  {
+    Serial.println("No values saved for ssid or password");
+    wifi_configured == false;
+  }
+  else
+  {
+    Serial.println("Wifi: "+ ssid + " psw: " + password);
+    wifi_configured == true;
+  }
+
+}
+
 void setup()
 {
   Serial.begin(115200);
