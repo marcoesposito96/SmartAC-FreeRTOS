@@ -1,4 +1,4 @@
-const char *ssid = "dd-wrt";
+const char *ssid = "PosteMobile_E4DEE5_2.4G";
 const char *password = "kindergransorpresa";
 
 // const char *ssid = "FASTWEB-C16F97";
@@ -9,7 +9,7 @@ const char *project_id = "smart-ac-embedded";
 const char *location = "europe-west1";
 const char *registry_id = "iot-reg";
 
-#define fabio
+#define marco
 
 #ifdef fabio
 const char *device_id = "esp32";
