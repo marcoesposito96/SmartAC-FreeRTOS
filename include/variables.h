@@ -1,13 +1,13 @@
 #include <Arduino.h>
-#define RSTBUTTON 33  
+#define RSTBUTTON 33
+#define TEMPMIN 18 
 
 bool request_in = false;
 bool request_rec = false;
 bool auto_mode = false;
 float temp,hum;
 float tempdes = 20;
-float humdes = 45; 
-String state;  //for automode
+float humdes = 45;
 String active_mode = "none";
 
 //deumPlus

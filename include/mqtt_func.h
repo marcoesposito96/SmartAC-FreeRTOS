@@ -7,6 +7,7 @@
 #include <CloudIoTCoreMqtt.h>
 #include "ciotc_config.h" 
 #include "variables.h"
+#include "IReditandsend.h"
 
 
 int c= 0;
@@ -26,7 +27,7 @@ void messageReceived(String &topic, String &payload)              // manage inco
     
     if (payload == "off"){      
       active_mode="none";
-      //send_signal_ac_off();
+      send_signal(TEMPMIN,"deumplus",false);
     }
     else{
       StaticJsonDocument<128> desired_conf;
@@ -41,12 +42,16 @@ void messageReceived(String &topic, String &payload)              // manage inco
       tempdes = desired_conf["tempdes"]; 
       humdes = desired_conf["humdes"]; 
 
-      if (desired_conf["mode"] == "cool")                    
+      if (desired_conf["mode"] == "cool") 
+      {                  
         active_mode="cool";
-        //send_signal_ac_cool(tempdes);
+        send_signal(tempdes,active_mode,true);
+      }
       if (desired_conf["mode"] == "deum")
+      {
         active_mode="deum";
-        //send_signal_ac_deum(tempdes);
+        send_signal(tempdes,active_mode,true);
+      }
       if (desired_conf["mode"] == "deumplus")
         active_mode="deumplus";
     }  
@@ -56,7 +61,7 @@ void messageReceived(String &topic, String &payload)              // manage inco
   {
     if (payload == "off"){
       active_mode="none";
-      //send_signal_ac_off(); 
+      send_signal(TEMPMIN,"deumplus",false); 
     }
     
   }
@@ -73,12 +78,12 @@ void messageReceived(String &topic, String &payload)              // manage inco
 void deumPlusMode(){                            //task to repeat when deum+ is active (if active_mode=="deum+" in main loop)
   if(hum < humdes && actual_state=="on")
   {
-    //send_signal_off_ac()
+    send_signal(TEMPMIN,"deumplus",false);
     actual_state="off";
   }
   if (actual_state=="off" && hum > (humdes + 10))  //10% tollerance
   {
-    //send_signal_on_ac()
+    send_signal(TEMPMIN,"deumplus",true);
     actual_state="on";
   }
 }

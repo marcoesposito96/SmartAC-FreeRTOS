@@ -49,14 +49,7 @@ void loop() {
   if (!mqttClient->connected()) {
     connect();
   }  
-  
-   if (auto_mode)                 //if auto mode is active updates state variable and run auto function
-  {
-    state = "Attiva";
-    //auto_temp();
-  }
-  else
-    state = "Spenta";
+     
 
   if (active_mode=="deumplus"){
     deumPlusMode();

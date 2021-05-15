@@ -5,13 +5,10 @@
 #include <IRtext.h>
 #include <IRutils.h>
 #include <IRsend.h>
-#include <Preferences.h>
+
 
 unsigned long lastMillis = 0;
-
-Preferences preferences ;
 const uint16_t RecvPin = 13;
-const uint32_t BaudRate = 115200;
 const uint16_t CaptureBufferSize = 1024;
 const uint8_t Timeout = 50; 
 const uint16_t Threshold = 100;
@@ -43,6 +40,7 @@ String get_signal_n_store()
         preferences.begin("storedcommand", false); //apro il namespace storedcommand
         preferences.putBytes("command", &readablestate, sizeof(readablestate)); //salvo il comando ac.next nel namespace my-app sotto la voce "comando"       
         preferences.putBool("command_stored", true);
+        command_stored = true;
         preferences.end();
         
       }
