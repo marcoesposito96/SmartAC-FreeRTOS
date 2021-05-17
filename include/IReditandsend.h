@@ -9,7 +9,7 @@
 
 Preferences preferences ;
 const size_t MAX_SIZE = 48; //dimensione massima segnale ac
-IRac ac(14);  // pin di uscita
+IRac ac(32);  // pin di uscita
 
 
 void get_stored() 

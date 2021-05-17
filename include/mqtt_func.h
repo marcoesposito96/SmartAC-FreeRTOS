@@ -54,6 +54,12 @@ void messageReceived(String &topic, String &payload)              // manage inco
       }
       if (desired_conf["mode"] == "deumplus")
         active_mode="deumplus";
+        actual_state="off";
+        if ( hum > humdes)  
+       {
+        send_signal(TEMPMIN,"deumplus",true);
+        actual_state="on";
+      }
     }  
   }
 
@@ -81,7 +87,7 @@ void deumPlusMode(){                            //task to repeat when deum+ is a
     send_signal(TEMPMIN,"deumplus",false);
     actual_state="off";
   }
-  if (actual_state=="off" && hum > (humdes + 10))  //10% tollerance
+  if (actual_state=="off" && hum > (humdes + 5))  //5% tollerance
   {
     send_signal(TEMPMIN,"deumplus",true);
     actual_state="on";

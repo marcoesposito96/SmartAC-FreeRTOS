@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#define RSTBUTTON 33
+#define RSTBUTTON 12
 #define TEMPMIN 18 
 
 bool request_in = false;
