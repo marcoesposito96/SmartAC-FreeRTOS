@@ -39,7 +39,11 @@ void handleConf()
   {
     ssid = server.arg("wifi");
     password = server.arg("password");
-    
+
+    preferences.begin("credentials", false);                //store obtained credentials
+    preferences.putString("ssid", ssid); 
+    preferences.putString("password", password);    
+    preferences.end();
 
     server.send(200, "text/html", "<h1>Configuration acquired, please connect wifi!</h1>");
     wifi_configured = true;
@@ -47,12 +51,13 @@ void handleConf()
   }
 }
 
-void checkCredentials()
+void check_credentials()
 {
   
   preferences.begin("credentials", false); 
   ssid = preferences.getString("ssid", "wifi"); 
   password = preferences.getString("password", "passwordwifi");
+  preferences.end();
 
   if (ssid == "" || password == "")
   {
@@ -64,8 +69,17 @@ void checkCredentials()
     Serial.println("Wifi: "+ ssid + " psw: " + password);
     wifi_configured == true;
   }
-
 }
+
+void reset_preferences_wifi()
+{
+  preferences.begin("credentials", false);                //reset stored credentials
+  preferences.putString("ssid", ""); 
+  preferences.putString("password", "");    
+  preferences.end();
+}
+
+
 
 void setup()
 {
