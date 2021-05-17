@@ -4,18 +4,16 @@ const char INDEX_page[] PROGMEM = R"=====(
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <title>Smart Thermostat - configura rete</title>
   <style type="text/css">
-body{
-  background:#AEE4FF;
-}
 
-/* latin-ext */
-@font-face {
-  font-family: 'Bitter';
-  font-style: normal;
-  font-weight: 400;
-  src: local('Bitter Regular'), local('Bitter-Regular'), url(https://fonts.gstatic.com/s/bitter/v15/rax8HiqOu8IVPmn7cYxpPDk.woff2) format('woff2');
-  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+:root {
+	--back: #801d1d;
+	--tema: #2f1d24e5;
+	--hover: #801d1d;
   }
+
+body{
+  background:var(--back)
+}
   /* latin */
   @font-face {
   font-family: 'Bitter';
@@ -44,7 +42,7 @@ body{
   margin-bottom: 15px;
 }
 .form-style-10 h1{
-  background: #2A88AD;
+  background: var(--tema);
   padding: 20px 30px 15px 30px;
   margin: -30px -30px 30px -30px;
   border-radius: 10px 10px 0 0;
@@ -58,26 +56,12 @@ body{
   box-shadow: inset 0px 2px 2px 0px rgba(255, 255, 255, 0.17);
   border: 1px solid #257C9E;
 }
-.form-style-10 h1 > span{
-  display: block;
-  margin-top: 2px;
-  font: 13px Arial, Helvetica, sans-serif;
-}
+
 .form-style-10 label{
   display: block;
   font: 13px Arial, Helvetica, sans-serif;
   color: #888;
   margin-bottom: 15px;
-}
-.auto {
-  font: normal 30px 'Bitter', serif;
-  color: #2A88AD;
-  margin-bottom: 5px;
-  display: flex;
-  text-align: left;
-}
-.button_section {
-  text-align: center;
 }
 
 
@@ -100,33 +84,15 @@ body{
   -webkit-box-shadow: inset 0px 1px 1px rgba(0, 0, 0, 0.33);
 }
 
-.form-style-10 .section{
-  font: normal 30px 'Bitter', serif;
-  color: #2A88AD;
-  margin-bottom: 5px;
-  text-align: left;
-}
 .form-style-10 .section1{
   font: normal 20px 'Bitter', serif;
-  color: #2A88AD;
+  color: var(--tema);
   margin-bottom: 5px;
   }
-.form-style-10 .section span {
-  background: #2A88AD;
-  padding: 5px 10px 5px 10px;
-  position: absolute;
-  border-radius: 50%;
-  -webkit-border-radius: 50%;
-  -moz-border-radius: 50%;
-  border: 4px solid #fff;
-  font-size: 14px;
-  margin-left: -45px;
-  color: #fff;
-  margin-top: -3px;
-}
-.form-style-10 input[type="button"], 
+  
+
 .form-style-10 input[type="submit"]{
-  background: #2A88AD;
+  background: var(--tema);
   padding: 8px 20px 8px 20px;
   border-radius: 5px;
   -webkit-border-radius: 5px;
@@ -140,9 +106,9 @@ body{
   border: 1px solid #257C9E;
   font-size: 15px;
 }
-.form-style-10 input[type="button"]:hover, 
+ 
 .form-style-10 input[type="submit"]:hover{
-  background: #2A6881;
+  background: var(--hover);
   -moz-box-shadow: inset 0px 2px 2px 0px rgba(255, 255, 255, 0.28);
   -webkit-box-shadow: inset 0px 2px 2px 0px rgba(255, 255, 255, 0.28);
   box-shadow: inset 0px 2px 2px 0px rgba(255, 255, 255, 0.28);
@@ -155,16 +121,14 @@ body{
 <body>
 
   <div class="form-style-10">
-    <h1>Smart Thermostat </h1>
+    <h1 style="font-size: 40px;">Smart A.C. </h1>
     
     <form action="/" method="POST">
       <div class="section1"><br>Configura wifi</div>
       <div class="inner-wrap">
         <label>Wifi <input type="text" name="wifi" maxlength="64" /></label>
         <label>Password <input type="text" name="password" maxlength="64" /></label>
-        <label>Sinric key (opzionale)<input type="text" name="key" maxlength="64"  /></label>
-        <label>Sinric device id (opzionale) <input type="text" name="id" maxlength="64" /></label>
-        <div class="button-section">
+               <div class="button-section">
           <input type="submit" name="Invia" value="Invia">
           </div>
       </div>
