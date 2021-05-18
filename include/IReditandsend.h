@@ -47,18 +47,8 @@ void send_signal(float set_temp, String set_mode, bool state)
     op_mode = stdAc::opmode_t::kDry;
   }
 
-  edit_signal(set_temp,op_mode,state); //customizzo il segnale ac prima di inviarlo  
+  edit_signal(set_temp,op_mode,state); //customizzo il segnale ac prima di inviarlo   
   ac.sendAc(); 
 }
 
 
-
-/* PER EVENTUALE DEBUG
-Serial.print("Risposta di getbytes: "); // Debug
-Serial.println(a); // Debug
-Serial.print("i gradi sono: "); 
-Serial.println(command.degrees); 
-Serial.print(resultToHumanReadableBasic(&results)); 
-Serial.print("Dimensione ac: ");
-Serial.println(sizeof(ac.next)); 
-*/

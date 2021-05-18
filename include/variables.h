@@ -10,6 +10,9 @@ float tempdes = 20;
 float humdes = 45;
 String active_mode = "none";
 
+String ssid = "";
+String password = "";
+
 //deumPlus
 String output_status = "on";
 String actual_state = "off"; //keeps track of AC power state in deum+ mode

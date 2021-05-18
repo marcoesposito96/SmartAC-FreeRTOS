@@ -18,7 +18,6 @@ void messageReceived(String &topic, String &payload)              // manage inco
  
   if (topic == "/devices/"+(String)device_id+"/commands/pull")
   {
-
     request_in = true;
   }
   
@@ -53,12 +52,14 @@ void messageReceived(String &topic, String &payload)              // manage inco
         send_signal(tempdes,active_mode,true);
       }
       if (desired_conf["mode"] == "deumplus")
+      {
         active_mode="deumplus";
         actual_state="off";
         if ( hum > humdes)  
-       {
+        {
         send_signal(TEMPMIN,"deumplus",true);
         actual_state="on";
+        }
       }
     }  
   }
@@ -124,7 +125,8 @@ void setupWifi(){
 
   WiFi.mode(WIFI_STA);
   // WiFi.setSleep(false); // May help with disconnect? Seems to have been removed from WiFi
-  WiFi.begin(ssid, password);
+  WiFi.begin(ssid.c_str(), password.c_str());
+ 
   Serial.println("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED){
     delay(100);
