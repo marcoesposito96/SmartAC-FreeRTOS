@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <IRrecv.h>
 #include <IRremoteESP8266.h>
 #include <IRac.h>
 #include <IRtext.h>
