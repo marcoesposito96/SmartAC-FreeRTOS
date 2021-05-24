@@ -26,9 +26,9 @@ struct messageq {
   float tempdes=0;
   float humdes=0;
   String command;
-};
+} mess;
 
-messageq mess;
+//struct messageq *pxmess;
 
 void messageReceived(String &topic, String &payload)              // manage incoming commands in subfolders
 {
@@ -64,11 +64,13 @@ void messageReceived(String &topic, String &payload)              // manage inco
     
     mess.tempdes = desired_conf["tempdes"]; 
     mess.humdes = desired_conf["humdes"];
-    mess.command = (String)desired_conf["mode"];
+    String mode= desired_conf["mode"];
+    mess.command=mode;
+    //pxmess= &mess;
   }
   
 
-  if(pdTRUE == xQueueSend(messageQueue_hand,mess,portMAX_DELAY))
+  if(pdTRUE == xQueueSend(messageQueue_hand,( void * ) &mess,portMAX_DELAY))
 		{
       Serial.print("Messaggio messo in coda: ");
       Serial.println(mess.command);
