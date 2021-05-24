@@ -3,11 +3,15 @@
 #include <WebServer.h>
 #include "index.h"
 
+extern SemaphoreHandle_t hotspot_mode;
+
 const char *ssid_ap = "Smart_ac";
 const char *password_ap = "123456789";
 boolean wifi_configured = false;
 
 WebServer server(80);
+
+volatile uint32_t lastTime = 0;
 
 void handleIndex()    
 { // serve page to configure connection and Sinric credentials
@@ -33,8 +37,7 @@ void handleConf()
     preferences.end();
 
     server.send(200, "text/html", "<h1>Configuration acquired</h1>");
-    wifi_configured = true;
-    setup();
+    wifi_configured = true;    
   }
 }
 
@@ -49,6 +52,7 @@ void check_credentials()
   {
     Serial.println("No values saved for ssid or password");
     wifi_configured = false;
+    xSemaphoreGive(hotspot_mode);
   }
   else
   {
@@ -63,7 +67,49 @@ void reset_preferences_wifi()
   preferences.putString("ssid", ""); 
   preferences.putString("password", "");    
   preferences.end();  
+  wifi_configured = false;
+}
+
+void IRAM_ATTR handleInterrupt() {
+
+  if(xTaskGetTickCount()-lastTime>10){
+    xSemaphoreGiveFromISR(hotspot_mode, NULL);
+    Serial.println("handle");
+  }
+  lastTime = xTaskGetTickCount();
+
 }
 
 
-
+void task_Hotspot(void * parameter ) 
+{
+  for(;;)
+  {
+    xSemaphoreTake(hotspot_mode,portMAX_DELAY);
+    reset_preferences_wifi();   
+    //add mutex from other tasks
+    WiFi.disconnect();
+    WiFi.softAP(ssid_ap, password_ap);
+    Serial.println();
+    Serial.print("Server IP address: ");
+    Serial.println(WiFi.softAPIP());
+    Serial.print("Server MAC address: ");
+    Serial.println(WiFi.softAPmacAddress());
+    server.on("/", HTTP_GET, handleIndex);
+    server.on("/", HTTP_POST, handleConf);
+    server.begin();
+    Serial.println("Server listening");
+    
+    for(;;)
+    {
+      server.handleClient();
+      
+      if (wifi_configured)
+      { 
+        Serial.println("prima break");        
+        ESP.restart();        
+      }
+    }
+    
+  }
+}

@@ -1,6 +1,9 @@
 #include <Arduino.h>
 #define RSTBUTTON 12
 #define TEMPMIN 18 
+#define LED_BUILTIN 2
+#define QUEUESIZE 20
+#define QUEUELEN 10
 
 bool request_in = false;
 bool request_rec = false;
