@@ -63,18 +63,3 @@ String store_command()
 
 
 
-
-/* DEBUG
-Serial.print(resultToHumanReadableBasic(&results));
-Serial.print("Dimensione ac: ");
-Serial.println(sizeof(ac.next));*/
-
-/*PER EVENTUALE DEBUG
-Serial.print("IL PROTOCOLO: " + typeToString(results.decode_type, results.repeat));  
-Serial.println(results.command);
-Serial.println("QUESTO E' RESULTS: ");
-Serial.println(results.state[1]);
-Display any extra A/C info if we have it.
-String description = IRAcUtils::resultAcToString(&results);
-if (description.length()) Serial.println(D_STR_MESGDESC ": " + description);
-yield();  // Feed the WDT as the text output can take a while to print.*/
