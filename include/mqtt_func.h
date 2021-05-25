@@ -18,7 +18,7 @@ TaskHandle_t task_MessageHandler_hand;
 extern SemaphoreHandle_t warning_led;
 extern SemaphoreHandle_t update_sensor;
 extern SemaphoreHandle_t sensor_ack;
-extern SemaphoreHandle_t pull, record, deumplus, stopdeumplus, mutex;
+extern SemaphoreHandle_t pull, record, deumplus, stopdeumplus, mutex, mutexmqtt;
 
 
 int passingLed;
@@ -247,6 +247,7 @@ void task_KeepMqtt(void * parameter)
 {
   for(;;)
   {
+    xSemaphoreTake(mutexmqtt, portMAX_DELAY);
     mqttClient->loop();
     vTaskDelay(10/portTICK_PERIOD_MS);  
     
@@ -260,6 +261,7 @@ void task_KeepMqtt(void * parameter)
         passingLed = 2;             
       }      
     }    
+    xSemaphoreGive(mutexmqtt);
     vTaskDelay(1000/portTICK_PERIOD_MS);    
   }
 }
@@ -315,13 +317,15 @@ void task_SendValues(void * parameter)
 {
   for(;;)
   {
+    
     xSemaphoreTake(pull, portMAX_DELAY);
+    xSemaphoreTake(mutexmqtt, portMAX_DELAY);
     xSemaphoreGive(update_sensor);
     xSemaphoreTake(sensor_ack, portMAX_DELAY);  
     String payload = String("{\"temp\": ") + String(temp) + String(",\"hum\": ") + String(hum) + String(",\"tempdes\": ") + tempdes + String(",\"humdes\": ") + humdes + String(",\"mode\": \"") + active_mode + String("\",\"command_stored\": \"")+ String(command_stored) + String("\"}");
-    Serial.println(payload);
     publishTelemetry(payload);
-    Serial.println("PUBBLICATO");
+    Serial.println(payload);
+    xSemaphoreGive(mutexmqtt);
     xSemaphoreGive(mutex); 
   } 
 }
@@ -352,12 +356,15 @@ void task_DeumPlus(void * parameter) //da rivedere
     }
     for(;;)
     {
-      xSemaphoreGive(update_sensor);
-      xSemaphoreTake(sensor_ack, portMAX_DELAY); 
       if(xSemaphoreTake(mutex, 0)==pdTRUE)
       {
+      xSemaphoreGive(update_sensor);
+      xSemaphoreTake(sensor_ack, portMAX_DELAY); 
         if(xSemaphoreTake(stopdeumplus, 0)==pdTRUE)
+        {
+          xSemaphoreGive(mutex);
           break; //Come back to semaphore if the active mode was changed  
+        }
         deumPlusMode();
         xSemaphoreGive(mutex);
       }

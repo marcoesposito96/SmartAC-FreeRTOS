@@ -14,7 +14,7 @@ const uint8_t Timeout = 50;
 const uint16_t Threshold = 100;
 IRrecv irrecv(RecvPin, CaptureBufferSize, Timeout, true); //inizializzo il ricevitore
 decode_results results;  // Variabile che conterrà le letture dei comandi
-extern SemaphoreHandle_t record, mutex;
+extern SemaphoreHandle_t record, mutex, mutexmqtt;
 
 
 void setup_receiver() {  
@@ -66,11 +66,13 @@ void task_Record(void * parameter) //da rivedere
   for(;;)
   {
     xSemaphoreTake(record, portMAX_DELAY);
+    xSemaphoreTake(mutexmqtt, portMAX_DELAY);
     Serial.println("ricevuto comando record");
     String feedback = store_command();         
     Serial.println(feedback);
     publishTelemetry("/record", feedback);  
-    xSemaphoreGive(mutex);   
+    xSemaphoreGive(mutex); 
+    xSemaphoreGive(mutexmqtt);     
   } 
 }
 
