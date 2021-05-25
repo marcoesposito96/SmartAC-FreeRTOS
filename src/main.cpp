@@ -8,7 +8,7 @@ SemaphoreHandle_t hotspot_mode;
 SemaphoreHandle_t warning_led;
 SemaphoreHandle_t update_sensor;
 SemaphoreHandle_t sensor_ack;
-SemaphoreHandle_t pull, record;
+SemaphoreHandle_t pull, record, stopdeumplus, deumplus, mutex;
 
 TaskHandle_t task_Hotspot_hand;
 TaskHandle_t task_KeepWifi_hand;
@@ -26,7 +26,9 @@ void setup()
   sensor_ack = xSemaphoreCreateBinary();
   pull = xSemaphoreCreateBinary();
   record = xSemaphoreCreateBinary();
-  
+  deumplus = xSemaphoreCreateBinary();
+  stopdeumplus= xSemaphoreCreateBinary();
+  mutex= xSemaphoreCreateMutex();
   Serial.begin(115200);  
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(RSTBUTTON, INPUT_PULLUP);

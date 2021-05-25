@@ -18,7 +18,7 @@ TaskHandle_t task_MessageHandler_hand;
 extern SemaphoreHandle_t warning_led;
 extern SemaphoreHandle_t update_sensor;
 extern SemaphoreHandle_t sensor_ack;
-extern SemaphoreHandle_t pull, record, deumplus;
+extern SemaphoreHandle_t pull, record, deumplus, stopdeumplus, mutex;
 
 
 int passingLed;
@@ -96,19 +96,6 @@ void messageReceived(String &topic, String &payload)              // manage inco
   }
 
   
-}
-
-void deumPlusMode(){                            //task to repeat when deum+ is active (if active_mode=="deum+" in main loop)
-  if(hum < humdes && actual_state=="on")
-  {
-    send_signal(TEMPMIN,"deumplus",false);
-    actual_state="off";
-  }
-  if (actual_state=="off" && hum > (humdes + 5))  //5% tollerance
-  {
-    send_signal(TEMPMIN,"deumplus",true);
-    actual_state="on";
-  }
 }
 
 
@@ -283,37 +270,44 @@ void task_MessageHandler(void * parameter)
   {   
     if(pdTRUE == xQueueReceive(messageQueue_hand,(void * ) &com,portMAX_DELAY))
     {
+      xSemaphoreTake(mutex, portMAX_DELAY);
       Serial.print("Riprendo comando: ");
       Serial.println(com.command);
 
       if(com.command=="pull")
       {
-        xSemaphoreGive(pull);
+        xSemaphoreGive(pull);        
       }
       else if(com.command=="deum" || com.command=="cool")
       {
+        if(active_mode=="deumplus")     // To check if last active mode was deumplus
+          xSemaphoreGive(stopdeumplus);
         tempdes=com.tempdes;
         active_mode=com.command;
         send_signal(com.tempdes,active_mode,true);
+        xSemaphoreGive(mutex);
       }
       else if(com.command=="deumplus")
       {
-        //gestire con semafori
         humdes=com.humdes;
         active_mode=com.command;
         xSemaphoreGive(deumplus);
+        xSemaphoreGive(mutex);
       }
       else if(com.command=="off")
       {
+        if(active_mode=="deumplus")     // To check if last active mode was deumplus
+          xSemaphoreGive(stopdeumplus);
         active_mode="none";
-        send_signal(TEMPMIN,"deumplus",false);
+        send_signal(TEMPMIN,"deumplus",false);   
+        xSemaphoreGive(mutex);
       }
       else if(com.command=="record")
-      {
+      {    
         xSemaphoreGive(record);
       }
     }
-    vTaskDelay(200/portTICK_PERIOD_MS);    
+    //vTaskDelay(200/portTICK_PERIOD_MS);    
   }
 }
 
@@ -328,19 +322,21 @@ void task_SendValues(void * parameter)
     Serial.println(payload);
     publishTelemetry(payload);
     Serial.println("PUBBLICATO");
+    xSemaphoreGive(mutex); 
   } 
 }
 
-void task_Record(void * parameter) //da rivedere
-{
-  for(;;)
+void deumPlusMode(){                            //task to repeat when deum+ is active (if active_mode=="deum+" in main loop)
+  if(hum < humdes && actual_state=="on")
   {
-    xSemaphoreTake(record, portMAX_DELAY);
-    Serial.println("ricevuto comando record");
-    String feedback = store_command();         
-    Serial.println(feedback);
-    publishTelemetry("/record", feedback);     
-  } 
+    send_signal(TEMPMIN,"deumplus",false);
+    actual_state="off";
+  }
+  if (actual_state=="off" && hum > (humdes + 5))  //5% tollerance
+  {
+    send_signal(TEMPMIN,"deumplus",true);
+    actual_state="on";
+  }
 }
 
 void task_DeumPlus(void * parameter) //da rivedere
@@ -358,21 +354,15 @@ void task_DeumPlus(void * parameter) //da rivedere
     {
       xSemaphoreGive(update_sensor);
       xSemaphoreTake(sensor_ack, portMAX_DELAY); 
-      if(active_mode!="deumplus")
-        break; //Come back to semaphore if the active mode was changed
-
-      if(hum < humdes && actual_state=="on")
+      if(xSemaphoreTake(mutex, 0)==pdTRUE)
       {
-        send_signal(TEMPMIN,"deumplus",false);
-        actual_state="off";
+        if(xSemaphoreTake(stopdeumplus, 0)==pdTRUE)
+          break; //Come back to semaphore if the active mode was changed  
+        deumPlusMode();
+        xSemaphoreGive(mutex);
       }
-      if (actual_state=="off" && hum > (humdes + 5))  //5% tollerance
-      {
-        send_signal(TEMPMIN,"deumplus",true);
-        actual_state="on";
-      }
-
       vTaskDelay(10000/portTICK_PERIOD_MS); //High delay, usefull in this case
+  
     } 
   } 
 }
