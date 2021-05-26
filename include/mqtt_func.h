@@ -29,10 +29,11 @@ struct messageq {
   float tempdes=TEMPMIN;
   float humdes=50;
   String command;
+  bool update=0;
 } mess, com;
 //struct messageq *pxmess;
 
-QueueHandle_t messageQueue_hand = xQueueCreate(QUEUELEN,QUEUESIZE);
+QueueHandle_t messageQueue_hand = xQueueCreate(QUEUELEN,sizeof(messageq));
 
 void messageReceived(String &topic, String &payload)              // manage incoming commands in subfolders
 {
@@ -79,6 +80,7 @@ void messageReceived(String &topic, String &payload)              // manage inco
       mess.humdes = desired_conf["humdes"];
       String mode= desired_conf["mode"];
       mess.command=mode;
+      mess.update=desired_conf["update"];
       //pxmess= &mess;
     }
   }  
@@ -123,34 +125,56 @@ String getJwt(){
   return jwt;
 }
 
-void setupWifi(){
+void initwifi(){
   Serial.println("Starting wifi");
 
   WiFi.mode(WIFI_STA);  
   WiFi.begin(ssid.c_str(), password.c_str());
  
   Serial.println("Connecting to WiFi");
-  while (WiFi.status() == WL_DISCONNECTED) 
-  {
-    vTaskDelay(100/portTICK_PERIOD_MS);
-  }
-  if (WiFi.status() != WL_CONNECTED){    
-    WiFi.begin(ssid.c_str(), password.c_str());
-    while (WiFi.status() != WL_CONNECTED) {
-      vTaskDelay(100/portTICK_PERIOD_MS);   
-    }
-    
-  }
 
+  vTaskDelay(100/portTICK_PERIOD_MS);
+
+  if (WiFi.status() != WL_CONNECTED)
+  {   
+    if (WiFi.status() != WL_DISCONNECTED) 
+    {
+      WiFi.disconnect(false, true);
+      vTaskDelay(200/portTICK_PERIOD_MS);
+    }
+    WiFi.begin(ssid.c_str(), password.c_str());
+    while (WiFi.status() != WL_CONNECTED) 
+    {
+      vTaskDelay(100/portTICK_PERIOD_MS);   
+    } 
+  }
+}
+
+void setupWifi(){
+
+  initwifi();
   Serial.println(time(nullptr));
   configTime(0, 3600, ntp_primary);
   Serial.println("Waiting on time sync...");
-  
-  while (time(nullptr) < 1510644967){     
-    vTaskDelay(100/portTICK_PERIOD_MS);   
+  startTime = xTaskGetTickCount(); 
+  while (true)
+  {  
+    if(time(nullptr) > 1510644967)
+    {
+      Serial.println(time(nullptr));
+      Serial.println("Ho ottenuto l'ora");
+      break;
+    }
+    if(xTaskGetTickCount()-startTime>10000)
+    {
+      Serial.println("RIAVVIO IL WIFI");
+      WiFi.disconnect();
+      initwifi();
+      startTime = xTaskGetTickCount();
+    }
+      
+    vTaskDelay(100/portTICK_PERIOD_MS);
   }
-  Serial.println(time(nullptr));
-  Serial.println("Ho ottenuto l'ora");
 }
 
 
@@ -177,7 +201,7 @@ void setupMqtt(){
   device = new CloudIoTCoreDevice(project_id, location, registry_id, device_id, private_key_str);  
   netClient = new WiFiClientSecure();  
   mqttClient = new MQTTClient(512);
-  mqttClient->setOptions(10, true, 1000); // keepAlive, cleanSession, timeout
+  mqttClient->setOptions(100, true, 1000); // keepAlive, cleanSession, timeout
   mqtt = new CloudIoTCoreMqtt(mqttClient, netClient, device);
   mqtt->setUseLts(true);
   mqtt->startMQTT();
@@ -276,7 +300,16 @@ void task_MessageHandler(void * parameter)
       Serial.print("Riprendo comando: ");
       Serial.println(com.command);
 
-      if(com.command=="pull")
+      if(com.command==active_mode && !com.update)
+      {
+        if(active_mode=="deumplus")     // To check if last active mode was deumplus
+          xSemaphoreGive(stopdeumplus);
+        active_mode="none";
+        send_signal(TEMPMIN,"deumplus",false);   
+        xSemaphoreGive(mutex);
+        continue;
+      }
+      else if(com.command=="pull")
       {
         xSemaphoreGive(pull);        
       }
@@ -323,7 +356,7 @@ void task_SendValues(void * parameter)
     xSemaphoreGive(update_sensor);
     xSemaphoreTake(sensor_ack, portMAX_DELAY);  
     String payload = String("{\"temp\": ") + String(temp) + String(",\"hum\": ") + String(hum) + String(",\"tempdes\": ") + tempdes + String(",\"humdes\": ") + humdes + String(",\"mode\": \"") + active_mode + String("\",\"command_stored\": \"")+ String(command_stored) + String("\"}");
-    publishTelemetry(payload);
+    publishTelemetry("/pull",payload);
     Serial.println(payload);
     xSemaphoreGive(mutexmqtt);
     xSemaphoreGive(mutex); 
