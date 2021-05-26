@@ -5,6 +5,14 @@
 
 extern SemaphoreHandle_t hotspot_mode;
 
+extern TaskHandle_t task_Hotspot_hand;
+extern TaskHandle_t task_KeepWifi_hand;
+extern TaskHandle_t task_KeepMqtt_hand;
+extern TaskHandle_t task_SendValues_hand;
+extern TaskHandle_t task_GetSensor_hand;
+extern TaskHandle_t task_Record_hand;
+extern TaskHandle_t task_DeumPlus_hand;
+
 const char *ssid_ap = "Smart_ac";
 const char *password_ap = "123456789";
 boolean wifi_configured = false;
@@ -73,6 +81,13 @@ void reset_preferences_wifi()
 void IRAM_ATTR handleInterrupt() {
 
   if(xTaskGetTickCount()-lastTime>10){
+    vTaskDelete(task_KeepWifi_hand);
+    vTaskDelete(task_KeepMqtt_hand);
+    vTaskDelete(task_SendValues_hand);
+    vTaskDelete(task_GetSensor_hand);
+    vTaskDelete(task_Record_hand);
+    vTaskDelete(task_DeumPlus_hand);
+    vTaskDelete(task_MessageHandler_hand);
     xSemaphoreGiveFromISR(hotspot_mode, NULL);
     Serial.println("handle");
   }
@@ -87,7 +102,10 @@ void task_Hotspot(void * parameter )
   {
     xSemaphoreTake(hotspot_mode,portMAX_DELAY);
     reset_preferences_wifi();   
-    //add mutex from other tasks
+    
+    //kill other tasks
+    
+
     WiFi.disconnect();
     WiFi.softAP(ssid_ap, password_ap);
     Serial.println();
@@ -101,7 +119,7 @@ void task_Hotspot(void * parameter )
     Serial.println("Server listening");
     
     for(;;)
-    {
+    {      
       server.handleClient();
       
       if (wifi_configured)
@@ -113,3 +131,4 @@ void task_Hotspot(void * parameter )
     
   }
 }
+
