@@ -165,10 +165,10 @@ void setupWifi(){
       Serial.println("Ho ottenuto l'ora");
       break;
     }
-    if(xTaskGetTickCount()-startTime>10000)
+    if(xTaskGetTickCount()-startTime>3000)
     {
       Serial.println("RIAVVIO IL WIFI");
-      WiFi.disconnect();
+      WiFi.disconnect(false,true);
       initwifi();
       startTime = xTaskGetTickCount();
     }
@@ -240,7 +240,7 @@ void task_KeepWifi(void * parameter)
 {
   for(;;)
   {
-      
+    Serial.println("Task Keepwif");
     if (WiFi.status() == WL_CONNECTED)
     {
       //Serial.println("wifi connesso");
@@ -272,6 +272,7 @@ void task_KeepMqtt(void * parameter)
   for(;;)
   {
     xSemaphoreTake(mutexmqtt, portMAX_DELAY);
+    Serial.println("Task KeepMQTT");
     mqttClient->loop();
     vTaskDelay(10/portTICK_PERIOD_MS);  
     
@@ -296,6 +297,7 @@ void task_MessageHandler(void * parameter)
   {   
     if(pdTRUE == xQueueReceive(messageQueue_hand,(void * ) &com,portMAX_DELAY))
     {
+      Serial.println("Task MessageHANDLER");
       xSemaphoreTake(mutex, portMAX_DELAY);
       Serial.print("Riprendo comando: ");
       Serial.println(com.command);
@@ -353,8 +355,10 @@ void task_SendValues(void * parameter)
     
     xSemaphoreTake(pull, portMAX_DELAY);
     xSemaphoreTake(mutexmqtt, portMAX_DELAY);
+    Serial.println("Task SendValues MUTEX MQTT PRESO");
     xSemaphoreGive(update_sensor);
     xSemaphoreTake(sensor_ack, portMAX_DELAY);  
+    Serial.println("Task SendValues GET TEMP PRESA");
     String payload = String("{\"temp\": ") + String(temp) + String(",\"hum\": ") + String(hum) + String(",\"tempdes\": ") + tempdes + String(",\"humdes\": ") + humdes + String(",\"mode\": \"") + active_mode + String("\",\"command_stored\": \"")+ String(command_stored) + String("\"}");
     publishTelemetry("/pull",payload);
     Serial.println(payload);
@@ -391,10 +395,12 @@ void task_DeumPlus(void * parameter) //da rivedere
     {
       if(xSemaphoreTake(mutex, 0)==pdTRUE)
       {
-      xSemaphoreGive(update_sensor);
-      xSemaphoreTake(sensor_ack, portMAX_DELAY); 
+        xSemaphoreGive(update_sensor);
+        xSemaphoreTake(sensor_ack, portMAX_DELAY); 
+        Serial.println("Task Deumplus GET TEMP PRESA");
         if(xSemaphoreTake(stopdeumplus, 0)==pdTRUE)
         {
+          Serial.println("Task Deumplus FINE E RILASCIO MUTEX");
           xSemaphoreGive(mutex);
           break; //Come back to semaphore if the active mode was changed  
         }
@@ -402,7 +408,6 @@ void task_DeumPlus(void * parameter) //da rivedere
         xSemaphoreGive(mutex);
       }
       vTaskDelay(10000/portTICK_PERIOD_MS); //High delay, usefull in this case
-  
     } 
   } 
 }

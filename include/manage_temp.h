@@ -28,11 +28,12 @@ void task_GetSensor(void * parameter)
   for(;;)
   {
     xSemaphoreTake(update_sensor,portMAX_DELAY);
+    Serial.println("Task get sensor");
     get_temp();
     xSemaphoreGive(sensor_ack);
-    while(xSemaphoreTake(update_sensor,0)==pdTRUE)
-    {
-      xSemaphoreGive(sensor_ack);
-    }
+    // while(xSemaphoreTake(update_sensor,0)==pdTRUE)
+    // {
+    //   xSemaphoreGive(sensor_ack);
+    // }
   } 
 }

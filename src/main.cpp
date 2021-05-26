@@ -95,7 +95,7 @@ void setup()
                     "Task SendValues",        /* String with name of task. */
                     10000,            /* Stack size in bytes. */
                     NULL,             /* Parameter passed as input of the task */
-                    1,                /* Priority of the task. */
+                    3,                /* Priority of the task. */
                     &task_SendValues_hand
                     ); 
   xTaskCreate(
@@ -103,7 +103,7 @@ void setup()
                     "Task GetSensor",        /* String with name of task. */
                     10000,            /* Stack size in bytes. */
                     NULL,             /* Parameter passed as input of the task */
-                    1,                /* Priority of the task. */
+                    3,                /* Priority of the task. */
                     &task_GetSensor_hand
                     );  
   xTaskCreate(
