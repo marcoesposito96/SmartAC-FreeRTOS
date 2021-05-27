@@ -1,22 +1,37 @@
 #include <Arduino.h>
-#include <DHT.h>
-
+#include "DHTesp.h"
 #define DHTPIN 25     
 #define DHTTYPE DHT22 
 
-DHT dht(DHTPIN, DHTTYPE);
+//DHT dht(DHTPIN, DHTTYPE);
+
+DHTesp dht;
+
 extern SemaphoreHandle_t update_sensor;
 extern SemaphoreHandle_t sensor_ack;
 
 void get_temp(){
-  temp = (round(dht.readTemperature() * 2)) / 2;
-  hum = (round(dht.readHumidity() * 2)) / 2;
+  vTaskDelay(10/portTICK_PERIOD_MS);
+  tempold = temp;
+  humold = hum;
+  temp = (round(dht.getTemperature() * 2)) / 2;
+  hum = (round(dht.getHumidity() * 2)) / 2;  
   
-  while (isnan(hum) || isnan(temp))                           //avoid reading errors
+  startTime = xTaskGetTickCount(); 
+  
+  while (isnan(hum) || isnan(temp))                           //avoid reading errors, if reading fails for more than 1s, restore old reading
+    {
+      temp = (round(dht.getTemperature() * 2)) / 2;
+      hum = (round(dht.getHumidity() * 2)) / 2;  
+      
+      if(xTaskGetTickCount()-startTime>1000)
       {
-        temp = (round(dht.readTemperature() * 2)) / 2;
-        hum = (round(dht.readHumidity() * 2)) / 2;
+        temp = tempold;
+        hum = humold;
+        Serial.println("Restore old temp");
+        break;
       }
+    }
 
   Serial.println("temp: "+(String)temp);
   Serial.println("hum: "+(String)hum);

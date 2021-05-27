@@ -49,8 +49,8 @@ void setup()
   {
     setupWifi();
     setupMqtt();              //initialize mqtt
-    dht.begin();                  //initialize hum & temp sensor
-       
+    //dht.begin();                  //initialize hum & temp sensor
+    dht.setup(DHTPIN, DHTesp::DHT22);   
     preferences.begin("storedcommand", false);                              //check if remote is already stored
     command_stored = preferences.getBool("command_stored", false);
     preferences.end();

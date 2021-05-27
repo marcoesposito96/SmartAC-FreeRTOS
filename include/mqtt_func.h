@@ -239,8 +239,7 @@ void task_WarningLed(void * parameter)
 void task_KeepWifi(void * parameter)
 {
   for(;;)
-  {
-    Serial.println("Task Keepwif");
+  {    
     if (WiFi.status() == WL_CONNECTED)
     {
       //Serial.println("wifi connesso");
@@ -271,8 +270,7 @@ void task_KeepMqtt(void * parameter)
 {
   for(;;)
   {
-    xSemaphoreTake(mutexmqtt, portMAX_DELAY);
-    Serial.println("Task KeepMQTT");
+    xSemaphoreTake(mutexmqtt, portMAX_DELAY);    
     mqttClient->loop();
     vTaskDelay(10/portTICK_PERIOD_MS);  
     
@@ -309,7 +307,6 @@ void task_MessageHandler(void * parameter)
         active_mode="none";
         send_signal(TEMPMIN,"deumplus",false);   
         xSemaphoreGive(mutex);
-        continue;
       }
       else if(com.command=="pull")
       {
@@ -328,7 +325,15 @@ void task_MessageHandler(void * parameter)
       {
         humdes=com.humdes;
         active_mode=com.command;
-        xSemaphoreGive(deumplus);
+        actual_state="off";
+        if (hum > humdes) 
+        {
+          send_signal(TEMPMIN,"deumplus",true);
+          actual_state="on";
+        }
+        if(xSemaphoreTake(stopdeumplus, 0)==pdFALSE) 
+          xSemaphoreGive(deumplus);
+        Serial.println("TaskMESSAGEHANDLER HO DATO LA GIVE A DEUMPLUS");
         xSemaphoreGive(mutex);
       }
       else if(com.command=="off")
@@ -382,31 +387,29 @@ void deumPlusMode(){                            //task to repeat when deum+ is a
 
 void task_DeumPlus(void * parameter) //da rivedere
 {
+  //float molt;
   for(;;)
   {
-    xSemaphoreTake(deumplus, portMAX_DELAY); 
-    actual_state="off";
-    if (hum > humdes) 
-    {
-      send_signal(TEMPMIN,"deumplus",true);
-      actual_state="on";
-    }
+    xSemaphoreTake(deumplus, portMAX_DELAY);
+    Serial.println("Task Deumplus PRENDO IL PRIMO SEMAFORO DAL FOR PIU' ESTERNO");
     for(;;)
     {
       if(xSemaphoreTake(mutex, 0)==pdTRUE)
       {
+        if(xSemaphoreTake(stopdeumplus, 0)==pdTRUE) 
+        {
+          Serial.println("Task Deumplus FINE E RILASCIO MUTEX"); 
+          xSemaphoreGive(mutex);
+          break; //Come back to semaphore deumplus if the active mode was changed 
+        }
         xSemaphoreGive(update_sensor);
         xSemaphoreTake(sensor_ack, portMAX_DELAY); 
         Serial.println("Task Deumplus GET TEMP PRESA");
-        if(xSemaphoreTake(stopdeumplus, 0)==pdTRUE)
-        {
-          Serial.println("Task Deumplus FINE E RILASCIO MUTEX");
-          xSemaphoreGive(mutex);
-          break; //Come back to semaphore if the active mode was changed  
-        }
         deumPlusMode();
         xSemaphoreGive(mutex);
       }
+      //molt=(abs(hum-humdes))/2;
+      //vTaskDelay(10000/portTICK_PERIOD_MS);
       vTaskDelay(10000/portTICK_PERIOD_MS); //High delay, usefull in this case
     } 
   } 
@@ -415,5 +418,11 @@ void task_DeumPlus(void * parameter) //da rivedere
     
   
 
-
+          // while(xSemaphoreTake(stopdeumplus, 0)==pdTRUE)
+          // {
+          //   if(xSemaphoreTake(deumplus, 0)!=pdTRUE)
+          //   {
+          //     Serial.println("Task Deumplus NON C'ERANO ABBASTANZA GIVE IN DEUMPLUS");
+          //   }
+          // }
 

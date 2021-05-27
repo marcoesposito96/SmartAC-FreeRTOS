@@ -11,6 +11,7 @@ bool auto_mode = false;
 float temp,hum;
 float tempdes = 20;
 float humdes = 45;
+float tempold, humold;
 String active_mode = "none";
 
 String ssid = "";
