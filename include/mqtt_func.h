@@ -219,7 +219,6 @@ void task_WarningLed(void * parameter)
     Serial.println(passingLed);
     while(passingLed == 0)
     {      
-      Serial.println("accendo led");
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
       vTaskDelay(100/portTICK_PERIOD_MS);
       
@@ -331,9 +330,8 @@ void task_MessageHandler(void * parameter)
           send_signal(TEMPMIN,"deumplus",true);
           actual_state="on";
         }
-        if(xSemaphoreTake(stopdeumplus, 0)==pdFALSE) 
+        if(xSemaphoreTake(stopdeumplus, 0)==pdFALSE && !com.update) 
           xSemaphoreGive(deumplus);
-        Serial.println("TaskMESSAGEHANDLER HO DATO LA GIVE A DEUMPLUS");
         xSemaphoreGive(mutex);
       }
       else if(com.command=="off")
@@ -360,10 +358,8 @@ void task_SendValues(void * parameter)
     
     xSemaphoreTake(pull, portMAX_DELAY);
     xSemaphoreTake(mutexmqtt, portMAX_DELAY);
-    Serial.println("Task SendValues MUTEX MQTT PRESO");
     xSemaphoreGive(update_sensor);
     xSemaphoreTake(sensor_ack, portMAX_DELAY);  
-    Serial.println("Task SendValues GET TEMP PRESA");
     String payload = String("{\"temp\": ") + String(temp) + String(",\"hum\": ") + String(hum) + String(",\"tempdes\": ") + tempdes + String(",\"humdes\": ") + humdes + String(",\"mode\": \"") + active_mode + String("\",\"command_stored\": \"")+ String(command_stored) + String("\"}");
     publishTelemetry("/pull",payload);
     Serial.println(payload);
@@ -372,14 +368,20 @@ void task_SendValues(void * parameter)
   } 
 }
 
-void deumPlusMode(){                            //task to repeat when deum+ is active (if active_mode=="deum+" in main loop)
+void deumPlusMode(){   
+  Serial.print("actual_state prima di fare gli if: ");
+  Serial.println(actual_state);                         //task to repeat when deum+ is active (if active_mode=="deum+" in main loop)
   if(hum < humdes && actual_state=="on")
   {
+    Serial.println("Task Deumplus Sto mettendo actual state ON");
+    Serial.println(actual_state);
     send_signal(TEMPMIN,"deumplus",false);
     actual_state="off";
   }
   if (actual_state=="off" && hum > (humdes + 5))  //5% tollerance
   {
+    Serial.println("Task Deumplus Sto mettendo actual state ON");
+    Serial.println(actual_state);
     send_signal(TEMPMIN,"deumplus",true);
     actual_state="on";
   }
@@ -391,20 +393,17 @@ void task_DeumPlus(void * parameter) //da rivedere
   for(;;)
   {
     xSemaphoreTake(deumplus, portMAX_DELAY);
-    Serial.println("Task Deumplus PRENDO IL PRIMO SEMAFORO DAL FOR PIU' ESTERNO");
     for(;;)
     {
       if(xSemaphoreTake(mutex, 0)==pdTRUE)
       {
         if(xSemaphoreTake(stopdeumplus, 0)==pdTRUE) 
-        {
-          Serial.println("Task Deumplus FINE E RILASCIO MUTEX"); 
+        { 
           xSemaphoreGive(mutex);
           break; //Come back to semaphore deumplus if the active mode was changed 
         }
         xSemaphoreGive(update_sensor);
         xSemaphoreTake(sensor_ack, portMAX_DELAY); 
-        Serial.println("Task Deumplus GET TEMP PRESA");
         deumPlusMode();
         xSemaphoreGive(mutex);
       }

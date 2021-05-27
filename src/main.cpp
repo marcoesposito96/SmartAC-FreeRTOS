@@ -55,72 +55,80 @@ void setup()
     command_stored = preferences.getBool("command_stored", false);
     preferences.end();
  
-  xTaskCreate(
+  xTaskCreatePinnedToCore(
                     task_KeepWifi,          /* Task function. */
                     "Task KeepWifi",        /* String with name of task. */
                     10000,            /* Stack size in bytes. */
                     NULL,             /* Parameter passed as input of the task */
                     1,                /* Priority of the task. */
-                    &task_KeepWifi_hand
+                    &task_KeepWifi_hand,
+                    0
                     );
   
-  xTaskCreate(
+  xTaskCreatePinnedToCore(
                     task_KeepMqtt,          /* Task function. */
                     "Task KeepMqtt",        /* String with name of task. */
                     10000,            /* Stack size in bytes. */
                     NULL,             /* Parameter passed as input of the task */
                     1,                /* Priority of the task. */
-                    &task_KeepMqtt_hand
+                    &task_KeepMqtt_hand,
+                    0
                     ); 
 
-  xTaskCreate(
+  xTaskCreatePinnedToCore(
                     task_WarningLed,          /* Task function. */
                     "Task WarningLed",        /* String with name of task. */
                     10000,            /* Stack size in bytes. */
                     NULL,             /* Parameter passed as input of the task */
                     1,                /* Priority of the task. */
-                    &task_WarningLed_hand
+                    &task_WarningLed_hand,
+                    0
                     ); 
   
-  xTaskCreate(
+  xTaskCreatePinnedToCore(
                     task_MessageHandler,          /* Task function. */
                     "Task MessageHandler",        /* String with name of task. */
                     10000,            /* Stack size in bytes. */
                     NULL,             /* Parameter passed as input of the task */
                     1,                /* Priority of the task. */
-                    &task_MessageHandler_hand
+                    &task_MessageHandler_hand,
+                    1
                     ); 
-  xTaskCreate(
+  xTaskCreatePinnedToCore(
                     task_SendValues,          /* Task function. */
                     "Task SendValues",        /* String with name of task. */
                     10000,            /* Stack size in bytes. */
                     NULL,             /* Parameter passed as input of the task */
                     3,                /* Priority of the task. */
-                    &task_SendValues_hand
+                    &task_SendValues_hand,
+                    0
                     ); 
-  xTaskCreate(
+  xTaskCreatePinnedToCore(
                     task_GetSensor,          /* Task function. */
                     "Task GetSensor",        /* String with name of task. */
                     10000,            /* Stack size in bytes. */
                     NULL,             /* Parameter passed as input of the task */
                     3,                /* Priority of the task. */
-                    &task_GetSensor_hand
+                    &task_GetSensor_hand,
+                    0
                     );  
-  xTaskCreate(
+  xTaskCreatePinnedToCore(
                     task_Record,          /* Task function. */
                     "Task Record",        /* String with name of task. */
                     10000,            /* Stack size in bytes. */
                     NULL,             /* Parameter passed as input of the task */
                     1,                /* Priority of the task. */
-                    &task_Record_hand
+                    &task_Record_hand,
+                    0
                     );   
-  xTaskCreate(
+  xTaskCreatePinnedToCore(
                     task_DeumPlus,          /* Task function. */
                     "Task DeumPlus",        /* String with name of task. */
                     10000,            /* Stack size in bytes. */
                     NULL,             /* Parameter passed as input of the task */
                     1,                /* Priority of the task. */
-                    &task_DeumPlus_hand
+                    &task_DeumPlus_hand,
+                    1
                     );   
     
  }
