@@ -8,7 +8,7 @@ SemaphoreHandle_t hotspot_mode;
 SemaphoreHandle_t warning_led;
 SemaphoreHandle_t update_sensor;
 SemaphoreHandle_t sensor_ack;
-SemaphoreHandle_t pull, record, stopdeumplus, deumplus, mutex, mutexmqtt;
+SemaphoreHandle_t pull, record, stopdeumplus, deumplus, mutex, mutexmqtt, startmqtt;
 
 TaskHandle_t task_Hotspot_hand;
 TaskHandle_t task_KeepWifi_hand;
@@ -28,6 +28,7 @@ void setup()
   record = xSemaphoreCreateBinary();
   deumplus = xSemaphoreCreateBinary();
   stopdeumplus= xSemaphoreCreateBinary();
+  startmqtt= xSemaphoreCreateBinary();  
   mutex= xSemaphoreCreateMutex();
   mutexmqtt= xSemaphoreCreateMutex();
   Serial.begin(115200);  
@@ -47,15 +48,15 @@ void setup()
 
   if (wifi_configured == true)
   {
-    setupWifi();
-    setupMqtt();              //initialize mqtt
-    //dht.begin();                  //initialize hum & temp sensor
+    //setupWifi();
+    //setupMqtt();              //initialize mqtt
+  
     dht.setup(DHTPIN, DHTesp::DHT22);   
     preferences.begin("storedcommand", false);                              //check if remote is already stored
     command_stored = preferences.getBool("command_stored", false);
     preferences.end();
  
-  xTaskCreatePinnedToCore(
+   xTaskCreatePinnedToCore(
                     task_KeepWifi,          /* Task function. */
                     "Task KeepWifi",        /* String with name of task. */
                     10000,            /* Stack size in bytes. */
@@ -128,7 +129,7 @@ void setup()
                     NULL,             /* Parameter passed as input of the task */
                     1,                /* Priority of the task. */
                     &task_DeumPlus_hand,
-                    1
+                    0
                     );   
     
  }
@@ -137,5 +138,4 @@ void setup()
 void loop()
 {
   vTaskDelay(portMAX_DELAY);
-
 }

@@ -11,6 +11,18 @@ const size_t MAX_SIZE = 48; //dimensione massima segnale ac
 IRac ac(32);  // pin di uscita
 
 
+extern TaskHandle_t task_KeepWifi_hand;
+extern TaskHandle_t task_KeepMqtt_hand;
+extern TaskHandle_t task_SendValues_hand;
+extern TaskHandle_t task_GetSensor_hand;
+extern TaskHandle_t task_Record_hand;
+extern TaskHandle_t task_DeumPlus_hand;
+extern TaskHandle_t task_MessageHandler_hand;
+extern TaskHandle_t task_WarningLed_hand;
+
+extern SemaphoreHandle_t pull;
+
+
 void get_stored() 
 {
   try
@@ -46,8 +58,32 @@ void send_signal(float set_temp, String set_mode, bool state)
     op_mode = stdAc::opmode_t::kDry;
   }
 
+  vTaskSuspend(task_KeepWifi_hand);
+  vTaskSuspend(task_KeepMqtt_hand); 
+  vTaskSuspend(task_WarningLed_hand);
+  vTaskSuspend(task_SendValues_hand);
+  vTaskSuspend(task_GetSensor_hand);
+  vTaskSuspend(task_DeumPlus_hand);
+  
+  
+  Serial.println("inizio send");
   edit_signal(set_temp,op_mode,state); //customizzo il segnale ac prima di inviarlo   
-  ac.sendAc(); 
+  
+  vTaskDelay(300/portTICK_PERIOD_MS); 
+  Serial.println(ac.sendAc());
+  
+  
+  Serial.println("fine send"); 
+
+
+  vTaskResume(task_KeepWifi_hand);
+  vTaskResume(task_KeepMqtt_hand);
+  vTaskResume(task_WarningLed_hand);
+  vTaskResume(task_SendValues_hand);
+  vTaskResume(task_GetSensor_hand);
+  vTaskResume(task_DeumPlus_hand);
+  xSemaphoreGive(pull);  // send updates values to server    
+  
 }
 
 

@@ -18,7 +18,7 @@ TaskHandle_t task_MessageHandler_hand;
 extern SemaphoreHandle_t warning_led;
 extern SemaphoreHandle_t update_sensor;
 extern SemaphoreHandle_t sensor_ack;
-extern SemaphoreHandle_t pull, record, deumplus, stopdeumplus, mutex, mutexmqtt;
+extern SemaphoreHandle_t pull, record, deumplus, stopdeumplus, mutex, mutexmqtt, startmqtt, waitmessage;
 
 
 int passingLed;
@@ -33,10 +33,25 @@ struct messageq {
 } mess, com;
 //struct messageq *pxmess;
 
+///////////////////////////////
+
+// Initialize WiFi and MQTT for this board
+Client *netClient;
+CloudIoTCoreDevice *device;
+CloudIoTCoreMqtt *mqtt;
+MQTTClient *mqttClient;
+unsigned long iat = 0;
+String jwt;
+
+///////////////////////////////
+// Helpers specific to this board
+///////////////////////////////
+
 QueueHandle_t messageQueue_hand = xQueueCreate(QUEUELEN,sizeof(messageq));
 
 void messageReceived(String &topic, String &payload)              // manage incoming commands in subfolders
 {
+  //xSemaphoreTake(waitmessage, portMAX_DELAY);
   Serial.println("incoming: " + topic + " - " + payload);
   mess.command="";
   
@@ -46,17 +61,18 @@ void messageReceived(String &topic, String &payload)              // manage inco
     mess.command = "pull";
   }
 
-  if (topic == "/devices/"+(String)device_id+"/commands/record")
+  else if (topic == "/devices/"+(String)device_id+"/commands/record")
   {
     mess.command = "record";
   }
 
-  if (topic == "/devices/"+(String)device_id+"/commands/power")
+  else if (topic == "/devices/"+(String)device_id+"/commands/power")
   {
     mess.command = "off";
+    
   }
 
-  if (topic == "/devices/"+(String)device_id+"/commands/mode")
+  else if (topic == "/devices/"+(String)device_id+"/commands/mode")
   {
   
     if (payload == "off")
@@ -96,24 +112,10 @@ void messageReceived(String &topic, String &payload)              // manage inco
       Serial.println("c'è un problema nella send");
     }
   }
-
-  
 }
 
 
-///////////////////////////////
 
-// Initialize WiFi and MQTT for this board
-Client *netClient;
-CloudIoTCoreDevice *device;
-CloudIoTCoreMqtt *mqtt;
-MQTTClient *mqttClient;
-unsigned long iat = 0;
-String jwt;
-
-///////////////////////////////
-// Helpers specific to this board
-///////////////////////////////
 String getDefaultSensor(){
   return "Wifi: " + String(WiFi.RSSI()) + "db";
 }
@@ -237,6 +239,8 @@ void task_WarningLed(void * parameter)
 
 void task_KeepWifi(void * parameter)
 {
+  setupWifi(); //First initialize wifi
+  xSemaphoreGive(startmqtt);
   for(;;)
   {    
     if (WiFi.status() == WL_CONNECTED)
@@ -267,6 +271,8 @@ void task_KeepWifi(void * parameter)
 
 void task_KeepMqtt(void * parameter)
 {
+  xSemaphoreTake(startmqtt, portMAX_DELAY);
+  setupMqtt();
   for(;;)
   {
     xSemaphoreTake(mutexmqtt, portMAX_DELAY);    
@@ -330,6 +336,10 @@ void task_MessageHandler(void * parameter)
           send_signal(TEMPMIN,"deumplus",true);
           actual_state="on";
         }
+        else
+        {
+          send_signal(TEMPMIN,"deumplus",false);
+        }
         if(xSemaphoreTake(stopdeumplus, 0)==pdFALSE && !com.update) 
           xSemaphoreGive(deumplus);
         xSemaphoreGive(mutex);
@@ -373,18 +383,18 @@ void deumPlusMode(){
   Serial.println(actual_state);                         //task to repeat when deum+ is active (if active_mode=="deum+" in main loop)
   if(hum < humdes && actual_state=="on")
   {
-    Serial.println("Task Deumplus Sto mettendo actual state ON");
-    Serial.println(actual_state);
+    Serial.println("Task Deumplus Sto mettendo actual state OFF");
     send_signal(TEMPMIN,"deumplus",false);
     actual_state="off";
   }
   if (actual_state=="off" && hum > (humdes + 5))  //5% tollerance
   {
     Serial.println("Task Deumplus Sto mettendo actual state ON");
-    Serial.println(actual_state);
     send_signal(TEMPMIN,"deumplus",true);
     actual_state="on";
   }
+
+  Serial.println(actual_state);
 }
 
 void task_DeumPlus(void * parameter) //da rivedere
