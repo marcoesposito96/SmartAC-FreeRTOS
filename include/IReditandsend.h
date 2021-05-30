@@ -69,7 +69,7 @@ void send_signal(float set_temp, String set_mode, bool state)
   Serial.println("inizio send");
   edit_signal(set_temp,op_mode,state); //customizzo il segnale ac prima di inviarlo   
   
-  vTaskDelay(300/portTICK_PERIOD_MS); 
+  
   Serial.println(ac.sendAc());
   
   
