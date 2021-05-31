@@ -2,16 +2,7 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include "index.h"
-
-extern SemaphoreHandle_t hotspot_mode;
-
-extern TaskHandle_t task_Hotspot_hand;
-extern TaskHandle_t task_KeepWifi_hand;
-extern TaskHandle_t task_KeepMqtt_hand;
-extern TaskHandle_t task_SendValues_hand;
-extern TaskHandle_t task_GetSensor_hand;
-extern TaskHandle_t task_Record_hand;
-extern TaskHandle_t task_DeumPlus_hand;
+#include "variables.h"
 
 const char *ssid_ap = "Smart_ac";
 const char *password_ap = "123456789";

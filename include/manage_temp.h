@@ -1,14 +1,12 @@
 #include <Arduino.h>
 #include "DHTesp.h"
+#include "variables.h"
 #define DHTPIN 25     
 #define DHTTYPE DHT22 
 
 //DHT dht(DHTPIN, DHTTYPE);
 
 DHTesp dht;
-
-extern SemaphoreHandle_t update_sensor;
-extern SemaphoreHandle_t sensor_ack;
 
 void get_temp(){
   vTaskDelay(10/portTICK_PERIOD_MS);

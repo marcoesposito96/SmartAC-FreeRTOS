@@ -13,12 +13,7 @@
 
 
 
-TaskHandle_t task_WarningLed_hand;
-TaskHandle_t task_MessageHandler_hand;
-extern SemaphoreHandle_t warning_led;
-extern SemaphoreHandle_t update_sensor;
-extern SemaphoreHandle_t sensor_ack;
-extern SemaphoreHandle_t pull, record, deumplus, stopdeumplus, mutex, mutexmqtt, startmqtt, waitmessage;
+
 
 
 int passingLed;
@@ -246,7 +241,7 @@ void task_KeepWifi(void * parameter)
     if (WiFi.status() == WL_CONNECTED)
     {
       //Serial.println("wifi connesso");
-      vTaskDelay(1000/portTICK_PERIOD_MS);
+      vTaskDelay(5000/portTICK_PERIOD_MS);
       continue;
     }
 
@@ -290,7 +285,7 @@ void task_KeepMqtt(void * parameter)
       }      
     }    
     xSemaphoreGive(mutexmqtt);
-    vTaskDelay(1000/portTICK_PERIOD_MS);    
+    vTaskDelay(100/portTICK_PERIOD_MS);    
   }
 }
 
@@ -301,7 +296,7 @@ void task_MessageHandler(void * parameter)
     if(pdTRUE == xQueueReceive(messageQueue_hand,(void * ) &com,portMAX_DELAY))
     {
       Serial.println("Task MessageHANDLER");
-      xSemaphoreTake(mutex, portMAX_DELAY);
+      xSemaphoreTake(mutexmessage, portMAX_DELAY);
       Serial.print("Riprendo comando: ");
       Serial.println(com.command);
 
@@ -311,7 +306,7 @@ void task_MessageHandler(void * parameter)
           xSemaphoreGive(stopdeumplus);
         active_mode="none";
         send_signal(TEMPMIN,"deumplus",false);   
-        xSemaphoreGive(mutex);
+        xSemaphoreGive(mutexmessage);
       }
       else if(com.command=="pull")
       {
@@ -324,7 +319,7 @@ void task_MessageHandler(void * parameter)
         tempdes=com.tempdes;
         active_mode=com.command;
         send_signal(com.tempdes,active_mode,true);
-        xSemaphoreGive(mutex);
+        xSemaphoreGive(mutexmessage);
       }
       else if(com.command=="deumplus")
       {
@@ -342,7 +337,7 @@ void task_MessageHandler(void * parameter)
         }
         if(xSemaphoreTake(stopdeumplus, 0)==pdFALSE && !com.update) 
           xSemaphoreGive(deumplus);
-        xSemaphoreGive(mutex);
+        xSemaphoreGive(mutexmessage);
       }
       else if(com.command=="off")
       {
@@ -350,7 +345,7 @@ void task_MessageHandler(void * parameter)
           xSemaphoreGive(stopdeumplus);
         active_mode="none";
         send_signal(TEMPMIN,"deumplus",false);   
-        xSemaphoreGive(mutex);
+        xSemaphoreGive(mutexmessage);
       }
       else if(com.command=="record")
       {    
@@ -374,7 +369,7 @@ void task_SendValues(void * parameter)
     publishTelemetry("/pull",payload);
     Serial.println(payload);
     xSemaphoreGive(mutexmqtt);
-    xSemaphoreGive(mutex); 
+    xSemaphoreGive(mutexmessage); 
   } 
 }
 
@@ -405,17 +400,17 @@ void task_DeumPlus(void * parameter) //da rivedere
     xSemaphoreTake(deumplus, portMAX_DELAY);
     for(;;)
     {
-      if(xSemaphoreTake(mutex, 0)==pdTRUE)
+      if(xSemaphoreTake(mutexmessage, 0)==pdTRUE)
       {
         if(xSemaphoreTake(stopdeumplus, 0)==pdTRUE) 
         { 
-          xSemaphoreGive(mutex);
+          xSemaphoreGive(mutexmessage);
           break; //Come back to semaphore deumplus if the active mode was changed 
         }
         xSemaphoreGive(update_sensor);
         xSemaphoreTake(sensor_ack, portMAX_DELAY); 
         deumPlusMode();
-        xSemaphoreGive(mutex);
+        xSemaphoreGive(mutexmessage);
       }
       //molt=(abs(hum-humdes))/2;
       //vTaskDelay(10000/portTICK_PERIOD_MS);

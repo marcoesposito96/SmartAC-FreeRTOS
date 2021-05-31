@@ -5,6 +5,7 @@
 #include <IRtext.h>
 #include <IRutils.h>
 #include <IRsend.h>
+#include "variables.h"
 
 
 unsigned long lastMillis = 0;
@@ -14,7 +15,7 @@ const uint8_t Timeout = 50;
 const uint16_t Threshold = 100;
 IRrecv irrecv(RecvPin, CaptureBufferSize, Timeout, true); //inizializzo il ricevitore
 decode_results results;  // Variabile che conterrà le letture dei comandi
-extern SemaphoreHandle_t record, mutex, mutexmqtt;
+
 
 
 void setup_receiver() {  
@@ -71,7 +72,7 @@ void task_Record(void * parameter) //da rivedere
     String feedback = store_command();         
     Serial.println(feedback);
     publishTelemetry("/record", feedback);  
-    xSemaphoreGive(mutex); 
+    xSemaphoreGive(mutexmessage); 
     xSemaphoreGive(mutexmqtt);     
   } 
 }
