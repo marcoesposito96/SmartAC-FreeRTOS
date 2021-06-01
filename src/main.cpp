@@ -4,29 +4,26 @@
 #include "wifi_cred_config.h"
 #include "manage_temp.h"
 
-bool auto_mode = false;
-float temp,hum;
-float tempdes = 20;
-float humdes = 45;
-float tempold, humold;
-String active_mode = "none";
-String ssid = "";
-String password = "";
+float temp, hum; //temperature and humidity at last sensor relevation
+float tempdes = 20; //temperature sended in the request by user
+float humdes = 50; //humidity sended in the request by user
+String active_mode = "none"; //the mode that are currently running
+String ssid = ""; //wifi ssid
+String password = ""; //wifi pw
 String actual_state = "off"; //keeps track of AC power state in deum+ mode
-bool command_stored= false;
+bool command_stored = false; //to check if is stored a command in flash memory
 
-SemaphoreHandle_t hotspot_mode = NULL;
-SemaphoreHandle_t warning_led = NULL;
-SemaphoreHandle_t update_sensor = NULL;
-SemaphoreHandle_t sensor_ack = NULL;
+SemaphoreHandle_t hotspot_mode = NULL; 
+SemaphoreHandle_t warning_led = NULL;  
+SemaphoreHandle_t update_sensor = NULL; 
+SemaphoreHandle_t sensor_ack = NULL; //to confirm the successful detection from DHT sensor
 SemaphoreHandle_t pull = NULL; 
-SemaphoreHandle_t record = NULL;
-SemaphoreHandle_t stopdeumplus = NULL;
-SemaphoreHandle_t deumplus = NULL;
-SemaphoreHandle_t mutexmessage = NULL;
-SemaphoreHandle_t mutexmqtt = NULL;
-SemaphoreHandle_t startmqtt = NULL;
-
+SemaphoreHandle_t record = NULL; 
+SemaphoreHandle_t stopdeumplus = NULL; 
+SemaphoreHandle_t deumplus = NULL; 
+SemaphoreHandle_t mutexmessage = NULL; //to put in mutual exclusion the tasks that handle messages
+SemaphoreHandle_t mutexmqtt = NULL; //to put in mutual exclusion the tasks that using the mqtt's send channel
+SemaphoreHandle_t startmqtt = NULL; //to setup the mqtt after wifi are running
 
 TaskHandle_t task_Hotspot_hand;
 TaskHandle_t task_KeepWifi_hand;
@@ -40,8 +37,8 @@ TaskHandle_t task_MessageHandler_hand;
 
 void setup()
 {
-    
-  hotspot_mode = xSemaphoreCreateBinary();  
+
+  hotspot_mode = xSemaphoreCreateBinary();
   warning_led = xSemaphoreCreateBinary();
   update_sensor = xSemaphoreCreateBinary();
   sensor_ack = xSemaphoreCreateBinary();
@@ -49,123 +46,108 @@ void setup()
   record = xSemaphoreCreateBinary();
   deumplus = xSemaphoreCreateBinary();
   stopdeumplus = xSemaphoreCreateBinary();
-  startmqtt = xSemaphoreCreateBinary();  
+  startmqtt = xSemaphoreCreateBinary();
   mutexmessage = xSemaphoreCreateMutex();
   mutexmqtt = xSemaphoreCreateMutex();
 
- 
-
-  if(       // if semaphores init fails, restart device
-    hotspot_mode == NULL || warning_led == NULL || update_sensor == NULL || sensor_ack == NULL ||  
-    pull == NULL || record == NULL || deumplus == NULL || stopdeumplus == NULL || startmqtt == NULL || 
-    mutexmessage == NULL || mutexmqtt == NULL )
+  if ( // if semaphores init fails, restart device
+      hotspot_mode == NULL || warning_led == NULL || update_sensor == NULL || sensor_ack == NULL ||
+      pull == NULL || record == NULL || deumplus == NULL || stopdeumplus == NULL || startmqtt == NULL ||
+      mutexmessage == NULL || mutexmqtt == NULL)
   {
     Serial.println("Error in sem init");
     ESP.restart();
   }
 
-  Serial.begin(115200);  
+  Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(RSTBUTTON, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(RSTBUTTON), handleInterrupt, FALLING);
-  check_credentials();
+  attachInterrupt(digitalPinToInterrupt(RSTBUTTON), handleInterrupt, FALLING); //link pin to the interrupt function
+  check_credentials(); //check wifi credentials
 
   xTaskCreate(
-                    task_Hotspot,          /* Task function. */
-                    "Task hotspot",        /* String with name of task. */
-                    10000,            /* Stack size in bytes. */
-                    NULL,             /* Parameter passed as input of the task */
-                    1,                /* Priority of the task. */
-                    &task_Hotspot_hand
-                     );
+      task_Hotspot,
+      "Task hotspot",
+      10000,
+      NULL,
+      1,
+      &task_Hotspot_hand);
 
   if (wifi_configured == true)
   {
-    //setupWifi();
-    //setupMqtt();              //initialize mqtt
-  
-    dht.setup(DHTPIN, DHTesp::DHT22);   
-    preferences.begin("storedcommand", false);                              //check if remote is already stored
-    command_stored = preferences.getBool("command_stored", false);
+    dht.setup(DHTPIN, DHTesp::DHT22); //init DHT sensor
+    preferences.begin("storedcommand", false); 
+    command_stored = preferences.getBool("command_stored", false); //check if remote is already stored else return false
     preferences.end();
- 
-   xTaskCreatePinnedToCore(
-                    task_KeepWifi,          /* Task function. */
-                    "Task KeepWifi",        /* String with name of task. */
-                    10000,            /* Stack size in bytes. */
-                    NULL,             /* Parameter passed as input of the task */
-                    1,                /* Priority of the task. */
-                    &task_KeepWifi_hand,
-                    0
-                    );
-  
-  xTaskCreatePinnedToCore(
-                    task_KeepMqtt,          /* Task function. */
-                    "Task KeepMqtt",        /* String with name of task. */
-                    10000,            /* Stack size in bytes. */
-                    NULL,             /* Parameter passed as input of the task */
-                    1,                /* Priority of the task. */
-                    &task_KeepMqtt_hand,
-                    0
-                    ); 
 
-  xTaskCreatePinnedToCore(
-                    task_WarningLed,          /* Task function. */
-                    "Task WarningLed",        /* String with name of task. */
-                    10000,            /* Stack size in bytes. */
-                    NULL,             /* Parameter passed as input of the task */
-                    1,                /* Priority of the task. */
-                    &task_WarningLed_hand,
-                    0
-                    ); 
-  
-  xTaskCreatePinnedToCore(
-                    task_MessageHandler,          /* Task function. */
-                    "Task MessageHandler",        /* String with name of task. */
-                    10000,            /* Stack size in bytes. */
-                    NULL,             /* Parameter passed as input of the task */
-                    1,                /* Priority of the task. */
-                    &task_MessageHandler_hand,
-                    1
-                    ); 
-  xTaskCreatePinnedToCore(
-                    task_SendValues,          /* Task function. */
-                    "Task SendValues",        /* String with name of task. */
-                    10000,            /* Stack size in bytes. */
-                    NULL,             /* Parameter passed as input of the task */
-                    3,                /* Priority of the task. */
-                    &task_SendValues_hand,
-                    0
-                    ); 
-  xTaskCreatePinnedToCore(
-                    task_GetSensor,          /* Task function. */
-                    "Task GetSensor",        /* String with name of task. */
-                    10000,            /* Stack size in bytes. */
-                    NULL,             /* Parameter passed as input of the task */
-                    3,                /* Priority of the task. */
-                    &task_GetSensor_hand,
-                    0
-                    );  
-  xTaskCreatePinnedToCore(
-                    task_Record,          /* Task function. */
-                    "Task Record",        /* String with name of task. */
-                    10000,            /* Stack size in bytes. */
-                    NULL,             /* Parameter passed as input of the task */
-                    1,                /* Priority of the task. */
-                    &task_Record_hand,
-                    1
-                    );   
-  xTaskCreatePinnedToCore(
-                    task_DeumPlus,          /* Task function. */
-                    "Task DeumPlus",        /* String with name of task. */
-                    10000,            /* Stack size in bytes. */
-                    NULL,             /* Parameter passed as input of the task */
-                    1,                /* Priority of the task. */
-                    &task_DeumPlus_hand,
-                    1
-                    );   
-    
- }
+    xTaskCreatePinnedToCore(
+        task_KeepWifi,
+        "Task KeepWifi",
+        10000,
+        NULL,
+        1,
+        &task_KeepWifi_hand,
+        0);
+
+    xTaskCreatePinnedToCore(
+        task_KeepMqtt,
+        "Task KeepMqtt",
+        10000,
+        NULL,
+        1,
+        &task_KeepMqtt_hand,
+        0);
+
+    xTaskCreatePinnedToCore(
+        task_WarningLed,
+        "Task WarningLed",
+        10000,
+        NULL,
+        1,
+        &task_WarningLed_hand,
+        0);
+
+    xTaskCreatePinnedToCore(
+        task_MessageHandler,
+        "Task MessageHandler",
+        10000,
+        NULL,
+        1,
+        &task_MessageHandler_hand,
+        1);
+    xTaskCreatePinnedToCore(
+        task_SendValues,
+        "Task SendValues",
+        10000,
+        NULL,
+        3,
+        &task_SendValues_hand,
+        0);
+    xTaskCreatePinnedToCore(
+        task_GetSensor,
+        "Task GetSensor",
+        10000,
+        NULL,
+        3,
+        &task_GetSensor_hand,
+        0);
+    xTaskCreatePinnedToCore(
+        task_Record,
+        "Task Record",
+        10000,
+        NULL,
+        1,
+        &task_Record_hand,
+        1);
+    xTaskCreatePinnedToCore(
+        task_DeumPlus,
+        "Task DeumPlus",
+        10000,
+        NULL,
+        1,
+        &task_DeumPlus_hand,
+        1);
+  }
 }
 
 void loop()
