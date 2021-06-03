@@ -12,8 +12,8 @@ void get_temp()
   vTaskDelay(10 / portTICK_PERIOD_MS);
   tempold = temp;
   humold = hum;
-  temp = (round(dht.getTemperature() * 2)) / 2;
-  hum = (round(dht.getHumidity() * 2)) / 2;
+  temp = (round(dht.getTemperature() * 2)) / 2; //detect temp and hum from dht
+  hum = (round(dht.getHumidity() * 2)) / 2; 
 
   startTime = xTaskGetTickCount();
 
