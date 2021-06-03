@@ -7,50 +7,49 @@
 #include <IRsend.h>
 #include "variables.h"
 
-
 unsigned long lastMillis = 0;
 const uint16_t RecvPin = 13;
 const uint16_t CaptureBufferSize = 1024;
-const uint8_t Timeout = 50; 
+const uint8_t Timeout = 50;
 const uint16_t Threshold = 100;
-IRrecv irrecv(RecvPin, CaptureBufferSize, Timeout, true); //inizializzo il ricevitore
-decode_results results;  // Variabile che conterrà le letture dei comandi
+IRrecv irrecv(RecvPin, CaptureBufferSize, Timeout, true); //initialize IR receiver
+decode_results results;
 
-
-
-void setup_receiver() {  
-  Serial.println("In ascolto sul pin: " + String(RecvPin));
-  irrecv.setUnknownThreshold(Threshold); //imposta una soglia per evitare segnali di disturbo
-  irrecv.enableIRIn();  // Start the receiver
+void setup_receiver()
+{
+  Serial.println("Waiting for IR input on pin: " + String(RecvPin));
+  irrecv.setUnknownThreshold(Threshold); //threshold to avoid noise signal
+  irrecv.enableIRIn();                   //start receiver
 }
 
-String get_signal_n_store() 
-{  
+String get_signal_n_store()
+{
   lastMillis = millis();
-  while ((millis() - lastMillis)<20000) 
-  {    
-    if (irrecv.decode(&results)){
+  while ((millis() - lastMillis) < 20000) //20 seconds timeout in receiver mode
+  {
+    if (irrecv.decode(&results))
+    {
       stdAc::state_t readablestate;
-      IRAcUtils::decodeToState(&results, &readablestate); //trasformo il segnale in un vettore di tipo state_t
+      IRAcUtils::decodeToState(&results, &readablestate);
       Serial.println(typeToString(results.decode_type));
-      if(typeToString(results.decode_type)=="UNKNOWN")
+      if (typeToString(results.decode_type) == "UNKNOWN")
       {
         return "unknown_protocol";
-      }      
-      try 
+      }
+      try
       {
-        preferences.begin("storedcommand", false); //apro il namespace storedcommand
-        preferences.putBytes("command", &readablestate, sizeof(readablestate)); //salvo il comando ac.next nel namespace my-app sotto la voce "comando"       
+        preferences.begin("storedcommand", false); //store recorded signal in SPIFFS
+        preferences.putBytes("command", &readablestate, sizeof(readablestate));
         preferences.putBool("command_stored", true);
         command_stored = true;
         preferences.end();
-        
       }
-      catch(...){
+      catch (...)
+      {
         return "failed";
       }
       return "ok";
-    }    
+    }
   }
 
   return "timeout";
@@ -62,21 +61,17 @@ String store_command()
   return get_signal_n_store();
 }
 
-void task_Record(void * parameter) //da rivedere
+void task_Record(void *parameter) //wait for a IR signal and publish result to mqtt server
 {
-  for(;;)
+  for (;;)
   {
     xSemaphoreTake(record, portMAX_DELAY);
     xSemaphoreTake(mutexmqtt, portMAX_DELAY);
-    Serial.println("ricevuto comando record");
-    String feedback = store_command();         
+    Serial.println("Record command received");
+    String feedback = store_command();
     Serial.println(feedback);
-    publishTelemetry("/record", feedback);  
-    xSemaphoreGive(mutexmessage); 
-    xSemaphoreGive(mutexmqtt);     
-  } 
+    publishTelemetry("/record", feedback);
+    xSemaphoreGive(mutexmessage);
+    xSemaphoreGive(mutexmqtt);
+  }
 }
-
-
-
-
