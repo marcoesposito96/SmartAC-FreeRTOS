@@ -8,7 +8,7 @@ const char *ssid_ap = "Smart_ac";
 const char *password_ap = "123456789"; //hotspot mode credentials
 boolean wifi_configured = false;       //to know if credentials are stored in flash memory
 WebServer server(80);
-volatile uint32_t lastTime = 0; //DA AGGIUNGERE, PERCHE' VOLATILE????
+volatile uint32_t lastTime = 0; 
 
 void handleIndex()
 { // serve page to configure connection and Sinric credentials
@@ -19,7 +19,7 @@ void handleConf()
 {
   Serial.println(server.arg("wifi"));
   Serial.println(server.arg("password"));
-  if (server.arg("wifi") == "" || server.arg("password") == "")
+  if ((server.arg("wifi") == "") || (server.arg("password") == ""))
   { // if module is sent without wifi ssid or password serve again page
     handleIndex();
   }
@@ -45,7 +45,7 @@ void check_credentials()
   password = preferences.getString("password", "");
   preferences.end();
 
-  if (ssid == "" || password == "")
+  if ((ssid == "") || (password == ""))
   {
     Serial.println("No values saved for ssid or password");
     wifi_configured = false;
@@ -70,7 +70,7 @@ void reset_preferences_wifi()
 void IRAM_ATTR handleInterrupt()
 {
 
-  if (xTaskGetTickCount() - lastTime > 10)
+  if ((xTaskGetTickCount() - lastTime) > 10)
   {
     vTaskDelete(task_KeepWifi_hand);
     vTaskDelete(task_KeepMqtt_hand);
@@ -108,7 +108,7 @@ void task_Hotspot(void *parameter)
     {
       server.handleClient();
 
-      if (wifi_configured)
+      if (wifi_configured==true)
       {
         Serial.println("prima break");
         ESP.restart();

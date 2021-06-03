@@ -23,7 +23,7 @@ SemaphoreHandle_t stopdeumplus = NULL;
 SemaphoreHandle_t deumplus = NULL; 
 SemaphoreHandle_t mutexmessage = NULL; //to put in mutual exclusion the tasks that handle messages
 SemaphoreHandle_t mutexmqtt = NULL; //to put in mutual exclusion the tasks that using the mqtt's send channel
-SemaphoreHandle_t startmqtt = NULL; //to setup the mqtt after wifi are running
+SemaphoreHandle_t startmqtt = NULL; //to setup the mqtt after wifi is running
 
 TaskHandle_t task_Hotspot_hand;
 TaskHandle_t task_KeepWifi_hand;
@@ -36,8 +36,7 @@ TaskHandle_t task_WarningLed_hand;
 TaskHandle_t task_MessageHandler_hand;
 
 void setup()
-{
-
+{  
   hotspot_mode = xSemaphoreCreateBinary();
   warning_led = xSemaphoreCreateBinary();
   update_sensor = xSemaphoreCreateBinary();
@@ -51,9 +50,9 @@ void setup()
   mutexmqtt = xSemaphoreCreateMutex();
 
   if ( // if semaphores init fails, restart device
-      hotspot_mode == NULL || warning_led == NULL || update_sensor == NULL || sensor_ack == NULL ||
-      pull == NULL || record == NULL || deumplus == NULL || stopdeumplus == NULL || startmqtt == NULL ||
-      mutexmessage == NULL || mutexmqtt == NULL)
+      (hotspot_mode == NULL) || (warning_led == NULL) || (update_sensor == NULL) || (sensor_ack == NULL) ||
+      (pull == NULL) || (record == NULL) || (deumplus == NULL) || (stopdeumplus == NULL) || (startmqtt == NULL) ||
+      (mutexmessage == NULL) || (mutexmqtt == NULL))
   {
     Serial.println("Error in sem init");
     ESP.restart();
@@ -152,5 +151,6 @@ void setup()
 
 void loop()
 {
+
   vTaskDelay(portMAX_DELAY);
 }

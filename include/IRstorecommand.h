@@ -27,7 +27,7 @@ String get_signal_n_store()
   lastMillis = millis();
   while ((millis() - lastMillis) < 20000) //20 seconds timeout in receiver mode
   {
-    if (irrecv.decode(&results))
+    if (irrecv.decode(&results)==true)
     {
       stdAc::state_t readablestate;
       IRAcUtils::decodeToState(&results, &readablestate);

@@ -63,19 +63,24 @@ void messageReceived(String &topic, String &payload) //manage incoming commands 
       StaticJsonDocument<128> desired_conf; //desarialize json passed in payload
       DeserializationError error = deserializeJson(desired_conf, payload);
 
-      if (error)
+      if (error != NULL)
       {
         Serial.print(F("deserializeJson() failed: "));
-        Serial.println(error.f_str());
-        return;
+        Serial.println(error.f_str());        
       }
-
-      mess.tempdes = desired_conf["tempdes"];
-      mess.humdes = desired_conf["humdes"];
-      String mode = desired_conf["mode"];
-      mess.command = mode;
-      mess.update = desired_conf["update"];
+      else
+      {
+        mess.tempdes = desired_conf["tempdes"];
+        mess.humdes = desired_conf["humdes"];
+        String mode = desired_conf["mode"];
+        mess.command = mode;
+        mess.update = desired_conf["update"];
+      }
     }
+  }
+  else
+  {
+    
   }
 
   if (mess.command != "")
@@ -89,11 +94,10 @@ void messageReceived(String &topic, String &payload) //manage incoming commands 
       Serial.println("c'è un problema nella send");
     }
   }
-}
-
-String getDefaultSensor() //LA USIAMO QUESTA FUNZIONE???
-{
-  return "Wifi: " + String(WiFi.RSSI()) + "db";
+  else
+  {
+    Serial.println("Received config message from mqtt");
+  }
 }
 
 String getJwt() //calculate token for Google cloud auth
@@ -110,7 +114,7 @@ void initwifi() //intialize wifi connection and reconnect
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid.c_str(), password.c_str());
-
+ 
   Serial.println("Connecting to WiFi");
 
   vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -146,7 +150,7 @@ void setupWifi() //setup wifi and update time from ntp server
       Serial.println("Got time");
       break;
     }
-    if (xTaskGetTickCount() - startTime > 3000)
+    if ((xTaskGetTickCount() - startTime) > 3000)
     {
       Serial.println("reinitialize wifi connection");
       WiFi.disconnect(false, true);
@@ -195,7 +199,6 @@ void setupMqtt() //setup mqtt connection with Google Iot Core
 
 void task_WarningLed(void *parameter) //use led to notify if wifi isn't working (passingLed->0) or if mqtt isn't working (passingLed->1)
 {
-
   for (;;)
   {
     xSemaphoreTake(warning_led, portMAX_DELAY);
@@ -230,7 +233,7 @@ void task_KeepWifi(void *parameter) //check if wifi is still alive and eventuall
 
     Serial.print("checking wifi...");
     startTime = millis();
-    while (WiFi.status() != WL_CONNECTED && millis() - startTime < TIMEOUT_RECONNECT)
+    while ((WiFi.status() != WL_CONNECTED) && ((millis() - startTime) < TIMEOUT_RECONNECT))
     {
       Serial.print(".");
       vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -282,10 +285,12 @@ void task_MessageHandler(void *parameter) //decisional task, reads messagge from
       Serial.print("Picked from the queue: ");
       Serial.println(com.command);
 
-      if (com.command == active_mode && !com.update) //if command sent is the current active mode -> power off
+      if ((com.command == active_mode) && !com.update) //if command sent is the current active mode -> power off
       {
         if (active_mode == "deumplus") //checks if last active mode was deumplus and eventually blocks deumplus task
+        {
           xSemaphoreGive(stopdeumplus);
+        }
         active_mode = "none";
         send_signal(TEMPMIN, "deumplus", false); //poweroff signal (first two args are irrelevants)
         xSemaphoreGive(mutexmessage);
@@ -294,10 +299,12 @@ void task_MessageHandler(void *parameter) //decisional task, reads messagge from
       {
         xSemaphoreGive(pull);
       }
-      else if (com.command == "deum" || com.command == "cool")
+      else if ((com.command == "deum") || (com.command == "cool"))
       {
         if (active_mode == "deumplus")
+        {
           xSemaphoreGive(stopdeumplus);
+        }
         tempdes = com.tempdes;
         active_mode = com.command;
         send_signal(com.tempdes, active_mode, true); //send ir signal with desired mode and temp
@@ -317,14 +324,18 @@ void task_MessageHandler(void *parameter) //decisional task, reads messagge from
         {
           send_signal(TEMPMIN, "deumplus", false); //power off AC
         }
-        if (xSemaphoreTake(stopdeumplus, 0) == pdFALSE && !com.update)
+        if ((xSemaphoreTake(stopdeumplus, 0) == pdFALSE) && !com.update)
+        {
           xSemaphoreGive(deumplus); //if isn't already unlocked, unlocks deumplus task
+        }
         xSemaphoreGive(mutexmessage);
       }
       else if (com.command == "off")
       {
         if (active_mode == "deumplus")
+        {
           xSemaphoreGive(stopdeumplus);
+        }
         active_mode = "none";
         send_signal(TEMPMIN, "deumplus", false);
         xSemaphoreGive(mutexmessage);
@@ -333,6 +344,7 @@ void task_MessageHandler(void *parameter) //decisional task, reads messagge from
       {
         xSemaphoreGive(record); //unlocks record mode task
       }
+      else{}
     }
   }
 }
@@ -341,13 +353,12 @@ void task_SendValues(void *parameter) //get actual state and send it to mqtt ser
 {
   for (;;)
   {
-
     xSemaphoreTake(pull, portMAX_DELAY);
     xSemaphoreTake(mutexmqtt, portMAX_DELAY);
     xSemaphoreGive(update_sensor); //unlocks task that update hum and temp and wait for ack
     xSemaphoreTake(sensor_ack, portMAX_DELAY);
     String payload = String("{\"temp\": ") + String(temp) + String(",\"hum\": ") + String(hum) + String(",\"tempdes\": ") + tempdes + String(",\"humdes\": ") + humdes + String(",\"mode\": \"") + active_mode + String("\",\"command_stored\": \"") + String(command_stored) + String("\"}");
-    publishTelemetry("/pull", payload);
+    Serial.println(publishTelemetry("/pull", payload));
     Serial.println(payload);
     xSemaphoreGive(mutexmqtt);
     xSemaphoreGive(mutexmessage);
@@ -356,13 +367,13 @@ void task_SendValues(void *parameter) //get actual state and send it to mqtt ser
 
 void deumPlusMode() //deumPlus mode routine, compare current hum with desired hum and power off/on AC
 {
-  if (hum < humdes && actual_state == "on")
+  if ((hum < humdes) && (actual_state == "on"))
   {
     Serial.println("actual state OFF");
     send_signal(TEMPMIN, "deumplus", false);
     actual_state = "off";
   }
-  if (actual_state == "off" && hum > (humdes + 5)) //5% tollerance, avoids mutiple sends near threshold
+  if ((actual_state == "off") && (hum > (humdes + 5))) //5% tollerance, avoids mutiple sends near threshold
   {
     Serial.println("actual state ON");
     send_signal(TEMPMIN, "deumplus", true);

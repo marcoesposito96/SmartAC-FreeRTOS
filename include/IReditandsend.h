@@ -8,8 +8,8 @@
 #include "variables.h"
 
 Preferences preferences;
-const size_t MAX_SIZE = 48; //
-IRac ac(32);                //initialize IR pin
+const size_t MAX_SIZE = 48; //ac state_t size
+IRac ac(32); //initialize IR pin
 
 void get_stored() //retrieve stored IR signal
 {
