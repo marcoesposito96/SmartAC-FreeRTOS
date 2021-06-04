@@ -37,12 +37,15 @@ String get_signal_n_store()
         return "unknown_protocol";
       }
       try
-      {
+      { 
+        xSemaphoreTake(mutexmessage,portMAX_DELAY);
         preferences.begin("storedcommand", false); //store recorded signal in SPIFFS
         preferences.putBytes("command", &readablestate, sizeof(readablestate));
         preferences.putBool("command_stored", true);
-        command_stored = true;
         preferences.end();
+        xSemaphoreGive(mutexmessage);
+        command_stored = true;
+        
       }
       catch (...)
       {
@@ -64,14 +67,13 @@ String store_command()
 void task_Record(void *parameter) //wait for a IR signal and publish result to mqtt server
 {
   for (;;)
-  {
-    xSemaphoreTake(record, portMAX_DELAY);
-    xSemaphoreTake(mutexmqtt, portMAX_DELAY);
+  {   
+    xSemaphoreTake(record, portMAX_DELAY);  
     Serial.println("Record command received");
     String feedback = store_command();
     Serial.println(feedback);
+    xSemaphoreTake(mutexmqtt, portMAX_DELAY);
     publishTelemetry("/record", feedback);
-    xSemaphoreGive(mutexmessage);
     xSemaphoreGive(mutexmqtt);
   }
 }

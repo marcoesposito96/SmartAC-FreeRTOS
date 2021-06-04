@@ -66,7 +66,7 @@ void messageReceived(String &topic, String &payload) //manage incoming commands 
       if (error != NULL)
       {
         Serial.print(F("deserializeJson() failed: "));
-        Serial.println(error.f_str());        
+        Serial.println(error.f_str());
       }
       else
       {
@@ -80,7 +80,6 @@ void messageReceived(String &topic, String &payload) //manage incoming commands 
   }
   else
   {
-    
   }
 
   if (mess.command != "")
@@ -114,7 +113,7 @@ void initwifi() //intialize wifi connection and reconnect
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid.c_str(), password.c_str());
- 
+
   Serial.println("Connecting to WiFi");
 
   vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -202,7 +201,6 @@ void task_WarningLed(void *parameter) //use led to notify if wifi isn't working 
   for (;;)
   {
     xSemaphoreTake(warning_led, portMAX_DELAY);
-
     Serial.println(passingLed);
     while (passingLed == 0)
     {
@@ -281,70 +279,72 @@ void task_MessageHandler(void *parameter) //decisional task, reads messagge from
   {
     if (pdTRUE == xQueueReceive(messageQueue_hand, (void *)&com, portMAX_DELAY)) //take a message from the queue
     {
-      xSemaphoreTake(mutexmessage, portMAX_DELAY);
       Serial.print("Picked from the queue: ");
       Serial.println(com.command);
 
-      if ((com.command == active_mode) && !com.update) //if command sent is the current active mode -> power off
-      {
-        if (active_mode == "deumplus") //checks if last active mode was deumplus and eventually blocks deumplus task
-        {
-          xSemaphoreGive(stopdeumplus);
-        }
-        active_mode = "none";
-        send_signal(TEMPMIN, "deumplus", false); //poweroff signal (first two args are irrelevants)
-        xSemaphoreGive(mutexmessage);
-      }
-      else if (com.command == "pull") //if commands is a pull, unlocks task that send current status to mqtt server
+      if (com.command == "pull") //if commands is a pull, unlocks task that send current status to mqtt server
       {
         xSemaphoreGive(pull);
-      }
-      else if ((com.command == "deum") || (com.command == "cool"))
-      {
-        if (active_mode == "deumplus")
-        {
-          xSemaphoreGive(stopdeumplus);
-        }
-        tempdes = com.tempdes;
-        active_mode = com.command;
-        send_signal(com.tempdes, active_mode, true); //send ir signal with desired mode and temp
-        xSemaphoreGive(mutexmessage);
-      }
-      else if (com.command == "deumplus")
-      {
-        humdes = com.humdes;
-        active_mode = com.command;
-        actual_state = "off";
-        if (hum > humdes)
-        {
-          send_signal(TEMPMIN, "deumplus", true); //set AC in deum mode
-          actual_state = "on";
-        }
-        else
-        {
-          send_signal(TEMPMIN, "deumplus", false); //power off AC
-        }
-        if ((xSemaphoreTake(stopdeumplus, 0) == pdFALSE) && !com.update)
-        {
-          xSemaphoreGive(deumplus); //if isn't already unlocked, unlocks deumplus task
-        }
-        xSemaphoreGive(mutexmessage);
-      }
-      else if (com.command == "off")
-      {
-        if (active_mode == "deumplus")
-        {
-          xSemaphoreGive(stopdeumplus);
-        }
-        active_mode = "none";
-        send_signal(TEMPMIN, "deumplus", false);
-        xSemaphoreGive(mutexmessage);
       }
       else if (com.command == "record")
       {
         xSemaphoreGive(record); //unlocks record mode task
       }
-      else{}
+      else
+      {
+        xSemaphoreTake(mutexmessage, portMAX_DELAY);
+        if ((com.command == active_mode) && !com.update) //if command sent is the current active mode -> power off
+        {
+          if (active_mode == "deumplus") //checks if last active mode was deumplus and eventually blocks deumplus task
+          {
+            xSemaphoreGive(stopdeumplus);
+          }
+          active_mode = "none";
+          send_signal(TEMPMIN, "deumplus", false); //poweroff signal (first two args are irrelevants)
+          xSemaphoreGive(mutexmessage);
+        }
+        else if ((com.command == "deum") || (com.command == "cool"))
+        {
+          if (active_mode == "deumplus")
+          {
+            xSemaphoreGive(stopdeumplus);
+          }
+          tempdes = com.tempdes;
+          active_mode = com.command;
+          send_signal(com.tempdes, active_mode, true); //send ir signal with desired mode and temp
+          xSemaphoreGive(mutexmessage);
+        }
+        else if (com.command == "deumplus")
+        {
+          humdes = com.humdes;
+          active_mode = com.command;
+          actual_state = "off";
+          if (hum > humdes)
+          {
+            send_signal(TEMPMIN, "deumplus", true); //set AC in deum mode
+            actual_state = "on";
+          }
+          else
+          {
+            send_signal(TEMPMIN, "deumplus", false); //power off AC
+          }
+          if ((xSemaphoreTake(stopdeumplus, 0) == pdFALSE) && !com.update)
+          {
+            xSemaphoreGive(deumplus); //if isn't already unlocked, unlocks deumplus task
+          }
+          xSemaphoreGive(mutexmessage);
+        }
+        else if (com.command == "off")
+        {
+          if (active_mode == "deumplus")
+          {
+            xSemaphoreGive(stopdeumplus);
+          }
+          active_mode = "none";
+          send_signal(TEMPMIN, "deumplus", false);
+          xSemaphoreGive(mutexmessage);
+        }
+      }
     }
   }
 }
@@ -354,14 +354,13 @@ void task_SendValues(void *parameter) //get actual state and send it to mqtt ser
   for (;;)
   {
     xSemaphoreTake(pull, portMAX_DELAY);
-    xSemaphoreTake(mutexmqtt, portMAX_DELAY);
     xSemaphoreGive(update_sensor); //unlocks task that update hum and temp and wait for ack
     xSemaphoreTake(sensor_ack, portMAX_DELAY);
     String payload = String("{\"temp\": ") + String(temp) + String(",\"hum\": ") + String(hum) + String(",\"tempdes\": ") + tempdes + String(",\"humdes\": ") + humdes + String(",\"mode\": \"") + active_mode + String("\",\"command_stored\": \"") + String(command_stored) + String("\"}");
+    xSemaphoreTake(mutexmqtt, portMAX_DELAY);
     Serial.println(publishTelemetry("/pull", payload));
-    Serial.println(payload);
     xSemaphoreGive(mutexmqtt);
-    xSemaphoreGive(mutexmessage);
+    Serial.println(payload);
   }
 }
 

@@ -37,10 +37,14 @@ void get_temp()
 void task_GetSensor(void *parameter)   //waits for unlock on update_sensor, update current temp and hum and ack caller
 {
   for (;;)
-  {
+  {  
     xSemaphoreTake(update_sensor, portMAX_DELAY);
     Serial.println("Task get sensor");
     get_temp();
     xSemaphoreGive(sensor_ack);
+    while(xSemaphoreTake(update_sensor,0)==pdTRUE)  //ack other tasks waiting for updated temp and hum
+    {
+      xSemaphoreGive(sensor_ack);
+    }
   }
 }

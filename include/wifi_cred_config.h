@@ -88,7 +88,7 @@ void IRAM_ATTR handleInterrupt()
 void task_Hotspot(void *parameter)
 {
   for (;;)
-  {
+  {     
     xSemaphoreTake(hotspot_mode, portMAX_DELAY);
     reset_preferences_wifi(); //clean wifi credentials stored
     //disconnect wifi and puts the device into hotspot mode

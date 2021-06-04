@@ -39,8 +39,8 @@ void setup()
 {  
   hotspot_mode = xSemaphoreCreateBinary();
   warning_led = xSemaphoreCreateBinary();
-  update_sensor = xSemaphoreCreateBinary();
-  sensor_ack = xSemaphoreCreateBinary();
+  update_sensor = xSemaphoreCreateCounting(2,0);
+  sensor_ack = xSemaphoreCreateCounting(2,0);
   pull = xSemaphoreCreateBinary();
   record = xSemaphoreCreateBinary();
   deumplus = xSemaphoreCreateBinary();
@@ -82,7 +82,7 @@ void setup()
     xTaskCreatePinnedToCore(
         task_KeepWifi,
         "Task KeepWifi",
-        10000,
+        3500,
         NULL,
         1,
         &task_KeepWifi_hand,
@@ -91,7 +91,7 @@ void setup()
     xTaskCreatePinnedToCore(
         task_KeepMqtt,
         "Task KeepMqtt",
-        10000,
+        5000,
         NULL,
         1,
         &task_KeepMqtt_hand,
@@ -100,7 +100,7 @@ void setup()
     xTaskCreatePinnedToCore(
         task_WarningLed,
         "Task WarningLed",
-        10000,
+        1500,
         NULL,
         1,
         &task_WarningLed_hand,
@@ -109,48 +109,47 @@ void setup()
     xTaskCreatePinnedToCore(
         task_MessageHandler,
         "Task MessageHandler",
-        10000,
+        3000,
         NULL,
-        1,
+        3,
         &task_MessageHandler_hand,
         1);
     xTaskCreatePinnedToCore(
         task_SendValues,
         "Task SendValues",
-        10000,
+        3000,
         NULL,
-        3,
+        4,
         &task_SendValues_hand,
         0);
     xTaskCreatePinnedToCore(
         task_GetSensor,
         "Task GetSensor",
-        10000,
+        2000,
         NULL,
-        3,
+        4,
         &task_GetSensor_hand,
         0);
     xTaskCreatePinnedToCore(
         task_Record,
         "Task Record",
-        10000,
+        3500,
         NULL,
-        1,
+        5,
         &task_Record_hand,
         1);
     xTaskCreatePinnedToCore(
         task_DeumPlus,
         "Task DeumPlus",
-        10000,
+        1500,
         NULL,
-        1,
+        2,
         &task_DeumPlus_hand,
         1);
   }
+  vTaskDelete(NULL);  //delete loop() and setup() task
 }
 
 void loop()
-{
-
-  vTaskDelay(portMAX_DELAY);
+{  
 }
