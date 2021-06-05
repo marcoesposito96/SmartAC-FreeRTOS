@@ -7,7 +7,6 @@
 #include <IRsend.h>
 #include "variables.h"
 
-unsigned long lastMillis = 0;
 const uint16_t RecvPin = 13;
 const uint16_t CaptureBufferSize = 1024;
 const uint8_t Timeout = 50;
@@ -24,10 +23,10 @@ void setup_receiver()
 
 String get_signal_n_store()
 {
-  lastMillis = millis();
-  while ((millis() - lastMillis) < 20000) //20 seconds timeout in receiver mode
+  TickType_t lastMillis = xTaskGetTickCount();
+  while ((xTaskGetTickCount() - lastMillis) < 20000) //20 seconds timeout in receiver mode
   {
-    if (irrecv.decode(&results)==true)
+    if (irrecv.decode(&results) == true)
     {
       stdAc::state_t readablestate;
       IRAcUtils::decodeToState(&results, &readablestate);
@@ -37,15 +36,14 @@ String get_signal_n_store()
         return "unknown_protocol";
       }
       try
-      { 
-        xSemaphoreTake(mutexmessage,portMAX_DELAY);
+      {
+        xSemaphoreTake(mutexmessage, portMAX_DELAY);
         preferences.begin("storedcommand", false); //store recorded signal in SPIFFS
         preferences.putBytes("command", &readablestate, sizeof(readablestate));
         preferences.putBool("command_stored", true);
         preferences.end();
         xSemaphoreGive(mutexmessage);
         command_stored = true;
-        
       }
       catch (...)
       {
@@ -67,8 +65,8 @@ String store_command()
 void task_Record(void *parameter) //wait for a IR signal and publish result to mqtt server
 {
   for (;;)
-  {   
-    xSemaphoreTake(record, portMAX_DELAY);  
+  {
+    xSemaphoreTake(record, portMAX_DELAY);
     Serial.println("Record command received");
     String feedback = store_command();
     Serial.println(feedback);

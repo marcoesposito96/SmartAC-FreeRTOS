@@ -2,7 +2,7 @@ const char INDEX_page[] PROGMEM = R"=====(
 <html>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <title>Smart Thermostat - configura rete</title>
+  <title>Smart A.C. - configura rete</title>
   <style type="text/css">
 
 :root {
@@ -127,7 +127,7 @@ body{
       <div class="section1"><br>Configura wifi</div>
       <div class="inner-wrap">
         <label>Wifi <input type="text" name="wifi" maxlength="64" /></label>
-        <label>Password <input type="text" name="password" maxlength="64" /></label>
+        <label>Password <input type="password" name="password" maxlength="64" /></label>
                <div class="button-section">
           <input type="submit" name="Invia" value="Invia">
           </div>

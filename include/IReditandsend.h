@@ -50,7 +50,6 @@ void send_signal(float set_temp, String set_mode, bool state)
   vTaskSuspend(task_WarningLed_hand);
   vTaskSuspend(task_SendValues_hand);
   vTaskSuspend(task_GetSensor_hand);
-  vTaskSuspend(task_DeumPlus_hand);
 
   edit_signal(set_temp, op_mode, state);
   ac.sendAc(); //send IR signal
@@ -60,6 +59,5 @@ void send_signal(float set_temp, String set_mode, bool state)
   vTaskResume(task_WarningLed_hand);
   vTaskResume(task_SendValues_hand);
   vTaskResume(task_GetSensor_hand);
-  vTaskResume(task_DeumPlus_hand);
   xSemaphoreGive(pull); //send updates values to server (current state changes after a signal is sent)
 }

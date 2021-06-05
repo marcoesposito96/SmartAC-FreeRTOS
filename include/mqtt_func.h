@@ -12,7 +12,6 @@
 #define TIMEOUT_RECONNECT 5000
 
 int passingLed;
-unsigned long startTime;
 
 Client *netClient;
 CloudIoTCoreDevice *device;
@@ -133,9 +132,8 @@ void initwifi() //intialize wifi connection and reconnect
   }
 }
 
-void setupWifi() //setup wifi and update time from ntp server
+void setupWifi(TickType_t startTime) //setup wifi and update time from ntp server
 {
-
   initwifi();
   Serial.println(time(nullptr));
   configTime(0, 3600, ntp_primary);
@@ -196,8 +194,29 @@ void setupMqtt() //setup mqtt connection with Google Iot Core
   mqtt->mqttConnect();
 }
 
+void deumPlusMode() //deumPlus mode routine, compare current hum with desired hum and power off/on AC
+{
+  if ((hum < humdes) && (actual_state == "on"))
+  {
+    Serial.println("actual state OFF");
+    send_signal(TEMPMIN, "deumplus", false);
+    actual_state = "off";
+  }
+  if ((actual_state == "off") && (hum > (humdes + 5))) //5% tollerance, avoids mutiple sends near threshold
+  {
+    Serial.println("actual state ON");
+    send_signal(TEMPMIN, "deumplus", true);
+    actual_state = "on";
+  }
+  Serial.println(actual_state);
+}
+
 void task_WarningLed(void *parameter) //use led to notify if wifi isn't working (passingLed->0) or if mqtt isn't working (passingLed->1)
 {
+  TickType_t xLastWakeTime;
+  const TickType_t xFrequency = 250;
+  const TickType_t xFrequencymqtt = 1000;
+  xLastWakeTime = xTaskGetTickCount();
   for (;;)
   {
     xSemaphoreTake(warning_led, portMAX_DELAY);
@@ -205,12 +224,12 @@ void task_WarningLed(void *parameter) //use led to notify if wifi isn't working 
     while (passingLed == 0)
     {
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-      vTaskDelay(100 / portTICK_PERIOD_MS);
+      vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
     while (passingLed == 1)
     {
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-      vTaskDelay(1000 / portTICK_PERIOD_MS);
+      vTaskDelayUntil(&xLastWakeTime, xFrequencymqtt);
     }
 
     digitalWrite(LED_BUILTIN, LOW);
@@ -219,22 +238,31 @@ void task_WarningLed(void *parameter) //use led to notify if wifi isn't working 
 
 void task_KeepWifi(void *parameter) //check if wifi is still alive and eventually reconnects
 {
-  setupWifi();
+  TickType_t startTime = 0;
+  setupWifi(startTime);
   xSemaphoreGive(startmqtt);
+  TickType_t xLastWakeTime;
+  const TickType_t xFrequency = 5000; 
+  const TickType_t xFrequencyrec = 500; // period for reconnection
+  xLastWakeTime = xTaskGetTickCount();
   for (;;)
   {
+    
     if (WiFi.status() == WL_CONNECTED)
     {
-      vTaskDelay(5000 / portTICK_PERIOD_MS);
+      Serial.println("KEEP WIFI CLASSIC");
+      vTaskDelayUntil(&xLastWakeTime, xFrequency);
+      xLastWakeTime = xTaskGetTickCount();
       continue;
     }
 
     Serial.print("checking wifi...");
-    startTime = millis();
-    while ((WiFi.status() != WL_CONNECTED) && ((millis() - startTime) < TIMEOUT_RECONNECT))
+    startTime = xTaskGetTickCount();
+    while ((WiFi.status() != WL_CONNECTED) && ((xTaskGetTickCount() - startTime) < TIMEOUT_RECONNECT))
     {
       Serial.print(".");
-      vTaskDelay(1000 / portTICK_PERIOD_MS);
+      vTaskDelayUntil(&xLastWakeTime, xFrequencyrec);
+      xLastWakeTime = xTaskGetTickCount();
     }
     if (WiFi.status() == WL_CONNECTED)
     {
@@ -243,7 +271,7 @@ void task_KeepWifi(void *parameter) //check if wifi is still alive and eventuall
 
     passingLed = 0; //if isn't working -> unlock warning led task and try reconnection
     xSemaphoreGive(warning_led);
-    setupWifi();
+    setupWifi(startTime);
     passingLed = 2; //neutral value
   }
 }
@@ -252,6 +280,9 @@ void task_KeepMqtt(void *parameter) //check if mqtt is still alive and eventuall
 {
   xSemaphoreTake(startmqtt, portMAX_DELAY);
   setupMqtt();
+  TickType_t xLastWakeTime;
+  const TickType_t xFrequency = 500;
+  xLastWakeTime = xTaskGetTickCount();
   for (;;)
   {
     xSemaphoreTake(mutexmqtt, portMAX_DELAY);
@@ -269,12 +300,15 @@ void task_KeepMqtt(void *parameter) //check if mqtt is still alive and eventuall
       }
     }
     xSemaphoreGive(mutexmqtt);
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+    vTaskDelayUntil(&xLastWakeTime, xFrequency);
   }
 }
 
 void task_MessageHandler(void *parameter) //decisional task, reads messagge from queue and take action
 {
+  TickType_t xLastWakeTime;
+  const TickType_t xFrequency = 500;
+  xLastWakeTime = xTaskGetTickCount();
   for (;;)
   {
     if (pdTRUE == xQueueReceive(messageQueue_hand, (void *)&com, portMAX_DELAY)) //take a message from the queue
@@ -346,11 +380,15 @@ void task_MessageHandler(void *parameter) //decisional task, reads messagge from
         }
       }
     }
+    vTaskDelayUntil(&xLastWakeTime, xFrequency);
   }
 }
 
 void task_SendValues(void *parameter) //get actual state and send it to mqtt server
 {
+  TickType_t xLastWakeTime;
+  const TickType_t xFrequency = 500;
+  xLastWakeTime = xTaskGetTickCount();
   for (;;)
   {
     xSemaphoreTake(pull, portMAX_DELAY);
@@ -361,31 +399,19 @@ void task_SendValues(void *parameter) //get actual state and send it to mqtt ser
     Serial.println(publishTelemetry("/pull", payload));
     xSemaphoreGive(mutexmqtt);
     Serial.println(payload);
+    vTaskDelayUntil(&xLastWakeTime, xFrequency);
   }
-}
-
-void deumPlusMode() //deumPlus mode routine, compare current hum with desired hum and power off/on AC
-{
-  if ((hum < humdes) && (actual_state == "on"))
-  {
-    Serial.println("actual state OFF");
-    send_signal(TEMPMIN, "deumplus", false);
-    actual_state = "off";
-  }
-  if ((actual_state == "off") && (hum > (humdes + 5))) //5% tollerance, avoids mutiple sends near threshold
-  {
-    Serial.println("actual state ON");
-    send_signal(TEMPMIN, "deumplus", true);
-    actual_state = "on";
-  }
-  Serial.println(actual_state);
 }
 
 void task_DeumPlus(void *parameter) //enables deumplus mode routine
 {
+  TickType_t xLastWakeTime;
+  const TickType_t xFrequency = 10000;
+  //xLastWakeTime = xTaskGetTickCount();
   for (;;)
   {
     xSemaphoreTake(deumplus, portMAX_DELAY);
+    xLastWakeTime = xTaskGetTickCount();
     for (;;)
     {
       if (xSemaphoreTake(mutexmessage, 0) == pdTRUE)
@@ -400,7 +426,7 @@ void task_DeumPlus(void *parameter) //enables deumplus mode routine
         deumPlusMode();
         xSemaphoreGive(mutexmessage);
       }
-      vTaskDelay(10000 / portTICK_PERIOD_MS); //high dealy, we don't need to check for hum variations too often
+      vTaskDelayUntil(&xLastWakeTime, xFrequency); //high delay, we don't need to check for hum variations too often
     }
   }
 }

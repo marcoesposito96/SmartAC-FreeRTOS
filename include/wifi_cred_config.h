@@ -8,7 +8,7 @@ const char *ssid_ap = "Smart_ac";
 const char *password_ap = "123456789"; //hotspot mode credentials
 boolean wifi_configured = false;       //to know if credentials are stored in flash memory
 WebServer server(80);
-volatile uint32_t lastTime = 0; 
+volatile uint32_t lastTime = 0;
 
 void handleIndex()
 { // serve page to configure connection and Sinric credentials
@@ -88,7 +88,7 @@ void IRAM_ATTR handleInterrupt()
 void task_Hotspot(void *parameter)
 {
   for (;;)
-  {     
+  {
     xSemaphoreTake(hotspot_mode, portMAX_DELAY);
     reset_preferences_wifi(); //clean wifi credentials stored
     //disconnect wifi and puts the device into hotspot mode
@@ -108,7 +108,7 @@ void task_Hotspot(void *parameter)
     {
       server.handleClient();
 
-      if (wifi_configured==true)
+      if (wifi_configured == true)
       {
         Serial.println("prima break");
         ESP.restart();

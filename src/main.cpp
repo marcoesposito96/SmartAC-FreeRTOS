@@ -141,7 +141,7 @@ void setup()
     xTaskCreatePinnedToCore(
         task_DeumPlus,
         "Task DeumPlus",
-        1500,
+        4000,
         NULL,
         2,
         &task_DeumPlus_hand,
