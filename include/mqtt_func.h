@@ -214,7 +214,7 @@ void deumPlusMode() //deumPlus mode routine, compare current hum with desired hu
 void task_WarningLed(void *parameter) //use led to notify if wifi isn't working (passingLed->0) or if mqtt isn't working (passingLed->1)
 {
   TickType_t xLastWakeTime;
-  const TickType_t xFrequency = 250;
+  const TickType_t xFrequency = 500;
   const TickType_t xFrequencymqtt = 1000;
   xLastWakeTime = xTaskGetTickCount();
   for (;;)
@@ -231,7 +231,6 @@ void task_WarningLed(void *parameter) //use led to notify if wifi isn't working 
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
       vTaskDelayUntil(&xLastWakeTime, xFrequencymqtt);
     }
-
     digitalWrite(LED_BUILTIN, LOW);
   }
 }
@@ -249,8 +248,7 @@ void task_KeepWifi(void *parameter) //check if wifi is still alive and eventuall
   {
     
     if (WiFi.status() == WL_CONNECTED)
-    {
-      Serial.println("KEEP WIFI CLASSIC");
+    {     
       vTaskDelayUntil(&xLastWakeTime, xFrequency);      
       continue;
     }
@@ -307,10 +305,11 @@ void task_MessageHandler(void *parameter) //decisional task, reads messagge from
   TickType_t xLastWakeTime;
   const TickType_t xFrequency = 500;
   xLastWakeTime = xTaskGetTickCount();
+  
   for (;;)
   {
     if (pdTRUE == xQueueReceive(messageQueue_hand, (void *)&com, portMAX_DELAY)) //take a message from the queue
-    {
+    {      
       Serial.print("Picked from the queue: ");
       Serial.println(com.command);
 
@@ -323,7 +322,7 @@ void task_MessageHandler(void *parameter) //decisional task, reads messagge from
         xSemaphoreGive(record); //unlocks record mode task
       }
       else
-      {
+      {        
         xSemaphoreTake(mutexmessage, portMAX_DELAY);
         if ((com.command == active_mode) && !com.update) //if command sent is the current active mode -> power off
         {
@@ -334,6 +333,7 @@ void task_MessageHandler(void *parameter) //decisional task, reads messagge from
           active_mode = "none";
           send_signal(TEMPMIN, "deumplus", false); //poweroff signal (first two args are irrelevants)
           xSemaphoreGive(mutexmessage);
+        
         }
         else if ((com.command == "deum") || (com.command == "cool"))
         {
@@ -344,7 +344,7 @@ void task_MessageHandler(void *parameter) //decisional task, reads messagge from
           tempdes = com.tempdes;
           active_mode = com.command;
           send_signal(com.tempdes, active_mode, true); //send ir signal with desired mode and temp
-          xSemaphoreGive(mutexmessage);
+          xSemaphoreGive(mutexmessage);          
         }
         else if (com.command == "deumplus")
         {
@@ -364,7 +364,8 @@ void task_MessageHandler(void *parameter) //decisional task, reads messagge from
           {
             xSemaphoreGive(deumplus); //if isn't already unlocked, unlocks deumplus task
           }
-          xSemaphoreGive(mutexmessage);
+          xSemaphoreGive(mutexmessage);          
+          
         }
         else if (com.command == "off")
         {
@@ -377,7 +378,9 @@ void task_MessageHandler(void *parameter) //decisional task, reads messagge from
           xSemaphoreGive(mutexmessage);
         }
       }
+   
     }
+    
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
   }
 }
@@ -411,7 +414,7 @@ void task_DeumPlus(void *parameter) //enables deumplus mode routine
     xSemaphoreTake(deumplus, portMAX_DELAY);
     xLastWakeTime = xTaskGetTickCount();
     for (;;)
-    {
+    {    
       if (xSemaphoreTake(mutexmessage, 0) == pdTRUE)
       {
         if (xSemaphoreTake(stopdeumplus, 0) == pdTRUE)
@@ -422,7 +425,7 @@ void task_DeumPlus(void *parameter) //enables deumplus mode routine
         xSemaphoreGive(update_sensor); //update current temp e hum before calling deumplus routine
         xSemaphoreTake(sensor_ack, portMAX_DELAY);
         deumPlusMode();
-        xSemaphoreGive(mutexmessage);
+        xSemaphoreGive(mutexmessage);      
       }
       vTaskDelayUntil(&xLastWakeTime, xFrequency); //high delay, we don't need to check for hum variations too often
     }

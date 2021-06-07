@@ -129,7 +129,7 @@ void setup()
         NULL,
         4,
         &task_GetSensor_hand,
-        0);
+        1);
     xTaskCreatePinnedToCore(
         task_Record,
         "Task Record",
