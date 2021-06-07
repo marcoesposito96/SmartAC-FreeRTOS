@@ -251,8 +251,7 @@ void task_KeepWifi(void *parameter) //check if wifi is still alive and eventuall
     if (WiFi.status() == WL_CONNECTED)
     {
       Serial.println("KEEP WIFI CLASSIC");
-      vTaskDelayUntil(&xLastWakeTime, xFrequency);
-      xLastWakeTime = xTaskGetTickCount();
+      vTaskDelayUntil(&xLastWakeTime, xFrequency);      
       continue;
     }
 
@@ -261,8 +260,7 @@ void task_KeepWifi(void *parameter) //check if wifi is still alive and eventuall
     while ((WiFi.status() != WL_CONNECTED) && ((xTaskGetTickCount() - startTime) < TIMEOUT_RECONNECT))
     {
       Serial.print(".");
-      vTaskDelayUntil(&xLastWakeTime, xFrequencyrec);
-      xLastWakeTime = xTaskGetTickCount();
+      vTaskDelayUntil(&xLastWakeTime, xFrequencyrec);      
     }
     if (WiFi.status() == WL_CONNECTED)
     {

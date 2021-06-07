@@ -45,19 +45,8 @@ void send_signal(float set_temp, String set_mode, bool state)
     op_mode = stdAc::opmode_t::kDry;
   }
 
-  vTaskSuspend(task_KeepWifi_hand);
-  vTaskSuspend(task_KeepMqtt_hand);
-  vTaskSuspend(task_WarningLed_hand);
-  vTaskSuspend(task_SendValues_hand);
-  vTaskSuspend(task_GetSensor_hand);
-
   edit_signal(set_temp, op_mode, state);
   ac.sendAc(); //send IR signal
-
-  vTaskResume(task_KeepWifi_hand);
-  vTaskResume(task_KeepMqtt_hand);
-  vTaskResume(task_WarningLed_hand);
-  vTaskResume(task_SendValues_hand);
-  vTaskResume(task_GetSensor_hand);
+ 
   xSemaphoreGive(pull); //send updates values to server (current state changes after a signal is sent)
 }
