@@ -1,0 +1,7 @@
+export PROJECT_ID=" your proj-id"
+export PUBSUB_TOPIC="your pub-sub topic"
+export PUBSUB_SUBSCRIPTION="your pub-sub sub"
+export REGISTRY_NAME="your iot reg"
+export DEVICE_NAME="esp32"
+export REGION_NAME="europe-west1"
+
