@@ -1,0 +1,352 @@
+Processing_Resource (
+	Type 			=> Fixed_Priority_Processor,
+	Name 			=> cpu1);
+
+Processing_Resource (
+	Type 			=> Fixed_Priority_Processor,
+	Name 			=> cpu2);
+
+
+Scheduling_Server (
+   Type                       => Fixed_Priority,
+   Name                       => get_sensor,
+   Server_Sched_Parameters    => 
+      ( Type         => Fixed_Priority_Policy,
+        The_Priority => 4,
+        Preassigned  => NO),
+   Server_Processing_Resource	=> cpu2);
+
+Scheduling_Server (
+   Type                       => Fixed_Priority,
+   Name                       => send_values,
+   Server_Sched_Parameters    => 
+      ( Type         => Fixed_Priority_Policy,
+        The_Priority => 4,
+        Preassigned  => NO),
+   Server_Processing_Resource	=> cpu1);
+
+Scheduling_Server (
+   Type                       => Fixed_Priority,
+   Name                       => warningled,
+   Server_Sched_Parameters    => 
+      ( Type         => Fixed_Priority_Policy,
+        The_Priority => 1,
+        Preassigned  => NO),
+   Server_Processing_Resource	=> cpu1);
+
+Scheduling_Server (
+   Type                       => Fixed_Priority,
+   Name                       => keepwifi,
+   Server_Sched_Parameters    => 
+      ( Type         => Fixed_Priority_Policy,
+        The_Priority => 1,
+        Preassigned  => NO),
+   Server_Processing_Resource	=> cpu1);
+
+Scheduling_Server (
+   Type                       => Fixed_Priority,
+   Name                       => keepmqtt,
+   Server_Sched_Parameters    => 
+      ( Type         => Fixed_Priority_Policy,
+        The_Priority => 1,
+        Preassigned  => NO),
+   Server_Processing_Resource	=> cpu1);
+
+
+Scheduling_Server (
+   Type                       => Fixed_Priority,
+   Name                       => message_handler,
+   Server_Sched_Parameters    => 
+      ( Type         => Fixed_Priority_Policy,
+        The_Priority => 3,
+        Preassigned  => NO),
+   Server_Processing_Resource	=> cpu2);
+
+Scheduling_Server (
+   Type                       => Fixed_Priority,
+   Name                       => deumplus,
+   Server_Sched_Parameters    => 
+      ( Type         => Fixed_Priority_Policy,
+        The_Priority => 2,
+        Preassigned  => NO),
+   Server_Processing_Resource	=> cpu2);
+
+Shared_Resource (
+   Type        => Immediate_Ceiling_Resource,
+   Name        => mutex_mqtt,
+   Ceiling     => 4,
+   Preassigned => NO);
+
+
+
+Shared_Resource (
+   Type        => Immediate_Ceiling_Resource,
+   Name        => mutex_message,
+   Ceiling     => 3,
+   Preassigned => NO);
+
+Operation (
+   Type                     => Enclosing,
+   Name                     => get_sensor,
+   Worst_Case_Execution_Time=> 45.00,
+   Avg_Case_Execution_Time  => 1.000E+100,
+   Best_Case_Execution_Time => 0.00);
+
+Operation (
+   Type                     => Enclosing,
+   Name                     => send_values,
+   Worst_Case_Execution_Time=> 20.00,
+   Avg_Case_Execution_Time  => 1.000E+100,
+   Best_Case_Execution_Time => 0.00,
+   Composite_Operation_List => 
+      ( send_telemetry));
+
+Operation (
+   Type                     => Enclosing,
+   Name                     => warningled,
+   Worst_Case_Execution_Time=> 5.00,
+   Avg_Case_Execution_Time  => 1.000E+100,
+   Best_Case_Execution_Time => 0.00);
+
+Operation (
+   Type                     => Enclosing,
+   Name                     => keepwifi,
+   Worst_Case_Execution_Time=> 20.00,
+   Avg_Case_Execution_Time  => 1.000E+100,
+   Best_Case_Execution_Time => 0.00);
+
+Operation (
+   Type                     => Enclosing,
+   Name                     => keepmqtt,
+   Worst_Case_Execution_Time=> 350.00,
+   Avg_Case_Execution_Time  => 1.000E+100,
+   Best_Case_Execution_Time => 0.00,
+   Composite_Operation_List => 
+      ( keep_all_mqtt));
+
+Operation (
+   Type                       => Simple,
+   Name                       => keep_all_mqtt,
+   Worst_Case_Execution_Time  => 350.00,
+   Avg_Case_Execution_Time    => 1.000E+100,
+   Best_Case_Execution_Time   => 0.00,
+   Shared_Resources_To_Lock   => 
+      ( mutex_mqtt),
+   Shared_Resources_To_Unlock => 
+      ( mutex_mqtt));
+
+Operation (
+   Type                       => Simple,
+   Name                       => send_telemetry,
+   Worst_Case_Execution_Time  => 15.00,
+   Avg_Case_Execution_Time    => 1.000E+100,
+   Best_Case_Execution_Time   => 0.00,
+   Shared_Resources_To_Lock   => 
+      ( mutex_mqtt),
+   Shared_Resources_To_Unlock => 
+      ( mutex_mqtt));
+
+Operation (
+   Type                     => Enclosing,
+   Name                     => message_handler,
+   Worst_Case_Execution_Time=> 150.00,
+   Avg_Case_Execution_Time  => 1.000E+100,
+   Best_Case_Execution_Time => 0.00,
+   Composite_Operation_List => 
+      ( send_message));
+
+Operation (
+   Type                     => Enclosing,
+   Name                     => deumplus,
+   Worst_Case_Execution_Time=> 120.00,
+   Avg_Case_Execution_Time  => 1.000E+100,
+   Best_Case_Execution_Time => 0.00,
+   Composite_Operation_List => 
+      ( check_deump));
+
+Operation (
+   Type                       => Simple,
+   Name                       => check_deump,
+   Worst_Case_Execution_Time  => 150.00,
+   Avg_Case_Execution_Time    => 1.000E+100,
+   Best_Case_Execution_Time   => 0.00,
+   Shared_Resources_To_Lock   => 
+      ( mutex_message),
+   Shared_Resources_To_Unlock => 
+      ( mutex_message));
+
+Operation (
+   Type                       => Simple,
+   Name                       => send_message,
+   Worst_Case_Execution_Time  => 150.00,
+   Avg_Case_Execution_Time    => 1.000E+100,
+   Best_Case_Execution_Time   => 0.00,
+   Shared_Resources_To_Lock   => 
+      ( mutex_message),
+   Shared_Resources_To_Unlock => 
+      ( mutex_message));
+
+Transaction (
+   Type            => regular,
+   Name            => get_sensor,
+   External_Events => 
+      ( ( Type       => Periodic,
+          Name       => get_sensor.input,
+          Period     => 250.000,
+          Max_Jitter => 0.000,
+          Phase      => 0.000)),
+   Internal_Events => 
+      ( ( Type => Regular,
+          Name => get_sensor.output,
+          Timing_Requirements => 
+            ( Type             => Hard_Global_Deadline,
+              Deadline         => 500.000,
+              Referenced_Event => get_sensor.input))),
+   Event_Handlers  => 
+      ( (Type               => System_Timed_Activity,
+         Input_Event        => get_sensor.input,
+         Output_Event       => get_sensor.output,
+         Activity_Operation => get_sensor,
+         Activity_Server    => get_sensor)));
+
+Transaction (
+   Type            => regular,
+   Name            => send_values,
+   External_Events => 
+      ( ( Type       => Periodic,
+          Name       => send_values.input,
+          Period     => 500.000,
+          Max_Jitter => 0.000,
+          Phase      => 0.000)),
+   Internal_Events => 
+      ( ( Type => Regular,
+          Name => send_values.output,
+          Timing_Requirements => 
+            ( Type             => Hard_Global_Deadline,
+              Deadline         => 500.000,
+              Referenced_Event => send_values.input))),
+   Event_Handlers  => 
+      ( (Type               => System_Timed_Activity,
+         Input_Event        => send_values.input,
+         Output_Event       => send_values.output,
+         Activity_Operation => send_values,
+         Activity_Server    => send_values)));
+
+Transaction (
+   Type            => regular,
+   Name            => warningled,
+   External_Events => 
+      ( ( Type       => Periodic,
+          Name       => warningled.input,
+          Period     => 500.000,
+          Max_Jitter => 0.000,
+          Phase      => 0.000)),
+   Internal_Events => 
+      ( ( Type => Regular,
+          Name => warningled.output,
+          Timing_Requirements => 
+            ( Type             => Hard_Global_Deadline,
+              Deadline         => 500.000,
+              Referenced_Event => warningled.input))),
+   Event_Handlers  => 
+      ( (Type               => System_Timed_Activity,
+         Input_Event        => warningled.input,
+         Output_Event       => warningled.output,
+         Activity_Operation => warningled,
+         Activity_Server    => warningled)));
+
+Transaction (
+   Type            => regular,
+   Name            => keepwifi,
+   External_Events => 
+      ( ( Type       => Periodic,
+          Name       => keepwifi.input,
+          Period     => 5000.00,
+          Max_Jitter => 0.000,
+          Phase      => 0.000)),
+   Internal_Events => 
+      ( ( Type => Regular,
+          Name => keepwifi.output,
+          Timing_Requirements => 
+            ( Type             => Hard_Global_Deadline,
+              Deadline         => 5000.00,
+              Referenced_Event => keepwifi.input))),
+   Event_Handlers  => 
+      ( (Type               => System_Timed_Activity,
+         Input_Event        => keepwifi.input,
+         Output_Event       => keepwifi.output,
+         Activity_Operation => keepwifi,
+         Activity_Server    => keepwifi)));
+
+Transaction (
+   Type            => regular,
+   Name            => keepmqtt,
+   External_Events => 
+      ( ( Type       => Periodic,
+          Name       => keepmqtt.input,
+          Period     => 500.000,
+          Max_Jitter => 0.000,
+          Phase      => 0.000)),
+   Internal_Events => 
+      ( ( Type => Regular,
+          Name => keepmqtt.output,
+          Timing_Requirements => 
+            ( Type             => Hard_Global_Deadline,
+              Deadline         => 500.000,
+              Referenced_Event => keepmqtt.input))),
+   Event_Handlers  => 
+      ( (Type               => System_Timed_Activity,
+         Input_Event        => keepmqtt.input,
+         Output_Event       => keepmqtt.output,
+         Activity_Operation => keepmqtt,
+         Activity_Server    => keepmqtt)));
+
+
+Transaction (
+   Type            => regular,
+   Name            => message_handler,
+   External_Events => 
+      ( ( Type       => Periodic,
+          Name       => message_handler.input,
+          Period     => 500.000,
+          Max_Jitter => 0.000,
+          Phase      => 0.000)),
+   Internal_Events => 
+      ( ( Type => Regular,
+          Name => message_handler.output,
+          Timing_Requirements => 
+            ( Type             => Hard_Global_Deadline,
+              Deadline         => 500.000,
+              Referenced_Event => message_handler.input))),
+   Event_Handlers  => 
+      ( (Type               => System_Timed_Activity,
+         Input_Event        => message_handler.input,
+         Output_Event       => message_handler.output,
+         Activity_Operation => message_handler,
+         Activity_Server    => message_handler)));
+
+Transaction (
+   Type            => regular,
+   Name            => deumplus,
+   External_Events => 
+      ( ( Type       => Periodic,
+          Name       => deumplus.input,
+          Period     => 10000.00,
+          Max_Jitter => 0.000,
+          Phase      => 0.000)),
+   Internal_Events => 
+      ( ( Type => Regular,
+          Name => deumplus.output,
+          Timing_Requirements => 
+            ( Type             => Hard_Global_Deadline,
+              Deadline         => 10000.00,
+              Referenced_Event => deumplus.input))),
+   Event_Handlers  => 
+      ( (Type               => System_Timed_Activity,
+         Input_Event        => deumplus.input,
+         Output_Event       => deumplus.output,
+         Activity_Operation => deumplus,
+         Activity_Server    => deumplus)));
+
+
+
