@@ -60,8 +60,8 @@ void setup()
 
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(RSTBUTTON, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(RSTBUTTON), handleInterrupt, FALLING); //link pin to the interrupt function
+  pinMode(0, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(0), handleInterrupt, FALLING); //link pin to the interrupt function
   check_credentials(); //check wifi credentials
 
   xTaskCreate(
